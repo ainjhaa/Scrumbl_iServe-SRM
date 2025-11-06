@@ -1,3 +1,4 @@
+import 'package:demo_app/wrapper.dart';
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 import 'signup_page.dart';
@@ -30,7 +31,7 @@ class WelcomePage extends StatelessWidget {
             const Text("iServe@SRM",
                 style: TextStyle(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold)),
             const SizedBox(height: 50),
-            _buildButton(context, "Login", const LoginPage()),
+            _buildButton(context, "Login", const Wrapper()),
             const SizedBox(height: 15),
             _buildButton(context, "Sign Up", const SignUpPage()),
             const SizedBox(height: 15),
