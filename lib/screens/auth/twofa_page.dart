@@ -9,7 +9,7 @@ class TwoFAVerificationDialog extends StatefulWidget {
 }
 
 class _TwoFAVerificationDialogState extends State<TwoFAVerificationDialog> {
-  final _codeController = TextEditingController();
+  TextEditingController _codeController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
