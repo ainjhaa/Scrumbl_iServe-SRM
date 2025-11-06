@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -8,11 +9,52 @@ class ForgotPasswordPage extends StatefulWidget {
 }
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
-  final _emailController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+  TextEditingController email = TextEditingController();
+  TextEditingController newPassword = TextEditingController();
+  TextEditingController confirmPassword = TextEditingController();
 
-  // 🩵 Step 1: Ask for Email
+  reset() async {
+  final userEmail = email.text.trim();
+  debugPrint("Attempting reset for: $userEmail");
+  try {
+    await FirebaseAuth.instance.sendPasswordResetEmail(email: userEmail);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Reset link sent! Check your inbox.")),
+    );
+  } on FirebaseAuthException catch (e) {
+    debugPrint("Error: ${e.code} — ${e.message}");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message ?? "An error occurred")),
+    );
+  }
+}
+
+
+  //reset() async{
+  //  await FirebaseAuth.instance.sendPasswordResetEmail(email: email.text);
+  //}
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Forgot Password"),),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: email,
+              decoration: InputDecoration(hintText: 'Enter email'),
+            ),
+
+            ElevatedButton(onPressed: (()=>reset()), child: Text("Send link"))
+          ],
+        ),
+      ),
+    );
+  }
+  /*
+  // Step 1: Ask for Email
   Future<void> _showEmailDialog() async {
     await showDialog(
       context: context,
@@ -27,7 +69,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               const Text("Please enter your email to receive reset instructions."),
               const SizedBox(height: 10),
               TextField(
-                controller: _emailController,
+                controller: email,
                 decoration: const InputDecoration(
                   labelText: "Email Address",
                   border: OutlineInputBorder(),
@@ -45,7 +87,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (_emailController.text.isNotEmpty) {
+                if (email.text.isNotEmpty) {
                   Navigator.pop(context); // Close email dialog
                   _showResetPasswordDialog(); // Go to reset password popup
                 } else {
@@ -62,7 +104,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  // 🩵 Step 2: Reset Password Dialog
+  // Step 2: Reset Password Dialog
   Future<void> _showResetPasswordDialog() async {
     await showDialog(
       context: context,
@@ -77,7 +119,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               const Text("Enter your new password below."),
               const SizedBox(height: 10),
               TextField(
-                controller: _newPasswordController,
+                controller: newPassword,
                 obscureText: true,
                 decoration: const InputDecoration(
                   labelText: "New Password",
@@ -86,7 +128,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               ),
               const SizedBox(height: 10),
               TextField(
-                controller: _confirmPasswordController,
+                controller: confirmPassword,
                 obscureText: true,
                 decoration: const InputDecoration(
                   labelText: "Confirm Password",
@@ -105,8 +147,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                final newPass = _newPasswordController.text.trim();
-                final confirmPass = _confirmPasswordController.text.trim();
+                final newPass = newPassword.text.trim();
+                final confirmPass = confirmPassword.text.trim();
 
                 if (newPass.isEmpty || confirmPass.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -139,18 +181,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showEmailDialog();
     });
-  }
+  }*/
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Forgot Password")),
-      body: const Center(
-        child: Text(
-          "Follow the steps to reset your password.",
-          style: TextStyle(fontSize: 16),
-        ),
-      ),
-    );
-  }
+  
 }
