@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../home_page.dart';
 import '../../services/auth_service.dart';
@@ -11,8 +12,13 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  
+  TextEditingController email = TextEditingController();
+  TextEditingController password = TextEditingController();
+
+  signIn() async{
+    await FirebaseAuth.instance.signInWithEmailAndPassword(email: email.text, password: password.text);
+  }
 
   void _open2FADialog() {
     showDialog(
@@ -42,12 +48,12 @@ class _LoginPageState extends State<LoginPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextField(
-              controller: _emailController,
+              controller: email,
               decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 20),
             TextField(
-              controller: _passwordController,
+              controller: password,
               obscureText: true,
               decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
             ),
@@ -62,7 +68,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _open2FADialog,
+              onPressed: (()=>signIn()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueAccent,
                 foregroundColor: Colors.white,
