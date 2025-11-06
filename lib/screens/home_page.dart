@@ -1,3 +1,6 @@
+import 'package:demo_app/screens/auth/signup_page.dart';
+import 'package:demo_app/wrapper.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../widgets/ai_chat_popup.dart';
 import '../widgets/info_section.dart';
@@ -17,6 +20,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+
+  final user=FirebaseAuth.instance.currentUser;
+
   void _openAIChat() {
     showModalBottomSheet(
       context: context,
@@ -43,7 +49,7 @@ class _HomePageState extends State<HomePage> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () {
               Navigator.pop(context); // close dialog
-              _logoutUser();
+              signout();
             },
             child: const Text("Logout"),
           ),
@@ -53,13 +59,20 @@ class _HomePageState extends State<HomePage> {
   );
 }
 
-void _logoutUser() {
+  signout() async{
+    await FirebaseAuth.instance.signOut();
+  }
+
+/*void _logoutUser() {
+/// try from kerol
+  await Firebase.
+
   // Example: clear local data or session token
   // (You can integrate FirebaseAuth.instance.signOut() here if using Firebase)
 
   // After logout, redirect to WelcomePage
-  Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false);
-}
+  ///Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false);
+}*/
 
 
   @override
@@ -123,19 +136,19 @@ void _logoutUser() {
                   icon: Icons.calendar_month,
                   label: "Upcoming Programs",
                   color: Colors.blue,
-                  destination: PlaceholderPage("Gallery"),
+                  destination: PlaceholderPage("Upcoming Program"),
                 ),
                 NavButton(
                   icon: Icons.track_changes,
                   label: "My Activities",
                   color: Colors.green,
-                  destination: PlaceholderPage("Events"),
+                  destination: PlaceholderPage("My Activities"),
                 ),
                 NavButton(
                   icon: Icons.workspace_premium,
                   label: "Digital Badge",
                   color: Colors.orange,
-                  destination: PlaceholderPage("Profile"),),
+                  destination: PlaceholderPage("Digital Badge"),),
               ],
             ),
 
@@ -143,7 +156,7 @@ void _logoutUser() {
 
             // 🔹 Information sections
             InfoSection(
-              title: "Know About \nGaya Hidup Rakan Muda",
+              title: "Know About Gaya\nHidup Rakan Muda",
               linkLabel: "See More",
               onLinkTap: () async {
                 final url = Uri.parse(
@@ -197,7 +210,6 @@ void _logoutUser() {
               cardWidth: 350,   // 🔧 You can tweak width
               cardHeight: 230,
               imageHeight: 180,
-              //imageBorderRadius: 15,
             ),
           ],
         ),
