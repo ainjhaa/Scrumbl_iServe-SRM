@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../widgets/ai_chat_popup.dart';
 import '../widgets/info_section.dart';
@@ -43,7 +44,7 @@ class _HomePageState extends State<HomePage> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () {
               Navigator.pop(context); // close dialog
-              _logoutUser();
+              signout();
             },
             child: const Text("Logout"),
           ),
@@ -53,14 +54,9 @@ class _HomePageState extends State<HomePage> {
   );
 }
 
-void _logoutUser() {
-  // Example: clear local data or session token
-  // (You can integrate FirebaseAuth.instance.signOut() here if using Firebase)
-
-  // After logout, redirect to WelcomePage
-  Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false);
-}
-
+  signout() async{
+    await FirebaseAuth.instance.signOut();
+  }
 
   @override
   Widget build(BuildContext context) {
