@@ -1,12 +1,13 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../widgets/ai_chat_popup.dart';
-import '../widgets/info_section.dart';
-import 'notification_page.dart';
-import 'profile_page.dart';
+import 'package:demo_app/widgets/ai_chat_popup.dart';
+import 'package:demo_app/widgets/info_section.dart';
+import 'package:demo_app/screens/notification_page.dart';
+import 'package:demo_app/screens/profile_page.dart';
 /*import 'membership_page.dart';
 import '../widgets/membership_card.dart';*/
-import 'placeholder_page.dart';
-import '../widgets/nav_button.dart';
+import 'package:demo_app/screens/placeholder_page.dart';
+import 'package:demo_app/widgets/nav_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AdminPage extends StatefulWidget {
@@ -43,7 +44,7 @@ class _AdminState extends State<AdminPage> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () {
               Navigator.pop(context); // close dialog
-              _logoutUser();
+              signout();
             },
             child: const Text("Logout"),
           ),
@@ -53,14 +54,9 @@ class _AdminState extends State<AdminPage> {
   );
 }
 
-void _logoutUser() {
-  // Example: clear local data or session token
-  // (You can integrate FirebaseAuth.instance.signOut() here if using Firebase)
-
-  // After logout, redirect to WelcomePage
-  Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false);
-}
-
+  signout() async{
+    await FirebaseAuth.instance.signOut();
+  }
 
   @override
   Widget build(BuildContext context) {
