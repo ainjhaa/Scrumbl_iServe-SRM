@@ -1,6 +1,6 @@
 import 'package:demo_app/wrapper.dart';
 import 'package:flutter/material.dart';
-import 'login_page.dart';
+//import 'login_page.dart';
 import 'signup_page.dart';
 
 class WelcomePage extends StatelessWidget {
@@ -21,8 +21,8 @@ class WelcomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              '../assets/images/srm_logo.png',
+            Image(
+              image: AssetImage('assets/srm_logo.png'),
               height: 200,
               width: 200,
               
@@ -35,20 +35,6 @@ class WelcomePage extends StatelessWidget {
             const SizedBox(height: 15),
             _buildButton(context, "Sign Up", const SignUpPage()),
             const SizedBox(height: 15),
-            /*ElevatedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(const SnackBar(content: Text('Google Sign-In coming soon!')));
-              },
-              icon: const Icon(Icons.g_mobiledata, color: Colors.red, size: 30),
-              label: const Text("Login with Google",
-                  style: TextStyle(fontSize: 18, color: Colors.black87)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),*/
           ],
         ),
       ),
