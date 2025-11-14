@@ -1,6 +1,3 @@
-import 'package:demo_app/screens/auth/signup_page.dart';
-import 'package:demo_app/wrapper.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../widgets/ai_chat_popup.dart';
 import '../widgets/info_section.dart';
@@ -20,9 +17,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-
-  final user=FirebaseAuth.instance.currentUser;
-
   void _openAIChat() {
     showModalBottomSheet(
       context: context,
@@ -49,7 +43,7 @@ class _HomePageState extends State<HomePage> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () {
               Navigator.pop(context); // close dialog
-              signout();
+              _logoutUser();
             },
             child: const Text("Logout"),
           ),
@@ -59,20 +53,13 @@ class _HomePageState extends State<HomePage> {
   );
 }
 
-  signout() async{
-    await FirebaseAuth.instance.signOut();
-  }
-
-/*void _logoutUser() {
-/// try from kerol
-  await Firebase.
-
+void _logoutUser() {
   // Example: clear local data or session token
   // (You can integrate FirebaseAuth.instance.signOut() here if using Firebase)
 
   // After logout, redirect to WelcomePage
-  ///Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false);
-}*/
+  Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false);
+}
 
 
   @override
@@ -116,6 +103,13 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Text("Welcome, User!",
+              style: const TextStyle(color: Colors.black, 
+                                     fontSize: 28, 
+                                     fontWeight: FontWeight.bold,
+                                     fontStyle: FontStyle.italic),
+            ),
+            const SizedBox(height: 15),
             // 🔹 Membership promo card
             MembershipCard(
               title: "Join Membership!",
@@ -129,34 +123,42 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 30),
 
             // 🔹 Horizontal navigation buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                NavButton(
-                  icon: Icons.calendar_month,
-                  label: "Upcoming Programs",
-                  color: Colors.blue,
-                  destination: PlaceholderPage("Upcoming Program"),
-                ),
-                NavButton(
-                  icon: Icons.track_changes,
-                  label: "My Activities",
-                  color: Colors.green,
-                  destination: PlaceholderPage("My Activities"),
-                ),
-                NavButton(
-                  icon: Icons.workspace_premium,
-                  label: "Digital Badge",
-                  color: Colors.orange,
-                  destination: PlaceholderPage("Digital Badge"),),
-              ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  SizedBox(width: 10), // optional spacing at start
+                  NavButton(
+                    icon: Icons.calendar_month,
+                    label: "Upcoming\nPrograms",
+                    color: Colors.blue,
+                    destination: PlaceholderPage("Gallery"),
+                  ),
+                  SizedBox(width: 10), // 👈 spacing between buttons
+                  NavButton(
+                    icon: Icons.track_changes,
+                    label: "My Activities\n",
+                    color: Colors.green,
+                    destination: PlaceholderPage("Events"),
+                  ),
+                  SizedBox(width: 10),
+                  NavButton(
+                    icon: Icons.workspace_premium,
+                    label: "Digital Badge\n",
+                    color: Colors.orange,
+                    destination: PlaceholderPage("Profile"),
+                  ),
+                  SizedBox(width: 10), // optional spacing at end
+                ], // NavButtons
+              ),
             ),
+            
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 30),
 
             // 🔹 Information sections
             InfoSection(
-              title: "Know About Gaya\nHidup Rakan Muda",
+              title: "Know About \nGaya Hidup Rakan Muda",
               linkLabel: "See More",
               onLinkTap: () async {
                 final url = Uri.parse(
@@ -168,23 +170,23 @@ class _HomePageState extends State<HomePage> {
               items: const [
                 {
                   "title": "Rakan Niaga",
-                  "image": "../assets/images/rakan_niaga.png"
+                  "image": "assets/rakan_niaga.png"
                 },
                 {
                   "title": "Rakan Prihatin",
-                  "image": "../assets/images/rakan_prihatin.png"
+                  "image": "assets/rakan_prihatin.png"
                 },
                 {
                   "title": "Rakan Bumi",
-                  "image": "../assets/images/rakan_bumi.png"
+                  "image": "assets/rakan_bumi.png"
                 },
                 {
                   "title": "Rakan Demokrasi",
-                  "image": "../assets/images/rakan_demokrasi.png"
+                  "image": "assets/rakan_demokrasi.png"
                 },
                 {
                   "title": "Rakan Aktif",
-                  "image": "../assets/images/rakan_aktif.png"
+                  "image": "assets/rakan_aktif.png"
                 },
               ],
               /*cardWidth: 130,   // 🔧 You can tweak width
@@ -192,9 +194,8 @@ class _HomePageState extends State<HomePage> {
               imageHeight: 90, */ // 🔧 adjust image size
             ),
 
+            const SizedBox(height: 30),
 
-
-            const SizedBox(height: 25),
             InfoSection(
               title: "What's Up News !",
               linkLabel: "See More",
@@ -205,12 +206,15 @@ class _HomePageState extends State<HomePage> {
                         builder: (_) => const PlaceholderPage("Announcements")));
               },
               items: const [
-                {"title": "New Committee Intake", "image": "../assets/images/news1.jpg"},
+                {"title": "New Committee Intake", "image": "assets/news1.jpg"},
               ],
               cardWidth: 350,   // 🔧 You can tweak width
               cardHeight: 230,
               imageHeight: 180,
+              //imageBorderRadius: 15,
             ),
+
+            const SizedBox(height: 30),
           ],
         ),
 
