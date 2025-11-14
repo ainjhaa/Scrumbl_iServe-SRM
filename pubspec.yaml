@@ -66,11 +66,13 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/images/rakan_niaga.png
-    - assets/images/rakan_prihatin.png
-    - assets/images/rakan_bumi.png
-    - assets/images/rakan_demokrasi.png
-    - assets/images/rakan_aktif.png
+    - assets/rakan_niaga.png
+    - assets/rakan_prihatin.png
+    - assets/rakan_bumi.png
+    - assets/rakan_demokrasi.png
+    - assets/rakan_aktif.png
+    - assets/srm_logo.png
+    - assets/
   #  - assets/images/default.jpg
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
@@ -100,3 +102,4 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
