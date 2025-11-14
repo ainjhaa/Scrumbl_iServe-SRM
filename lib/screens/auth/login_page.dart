@@ -2,7 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../home_page.dart';
 import '../../services/auth_service.dart';
+import '../home_admin.dart';
 import 'twofa_page.dart';
+
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,9 +14,42 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  
+  final AuthService _authService = AuthService(); // Instance of AuthService
   TextEditingController email = TextEditingController();
   TextEditingController password = TextEditingController();
+
+  void _login() async {
+
+    // Call login method from AuthService with user inputs
+
+  String? result = await _authService.login(
+      email: email.text,
+      password: password.text,
+    );
+
+    
+
+    // Navigate based on role or show error message
+    if (result == 'Admin') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const AdminPage(),
+        ),
+      );
+    } else if (result == 'User') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const HomePage(),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Login Failed: $result'), // Show error message
+      ));
+    }
+  }
 
   signIn() async{
     await FirebaseAuth.instance.signInWithEmailAndPassword(email: email.text, password: password.text);
