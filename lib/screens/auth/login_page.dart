@@ -1,3 +1,5 @@
+import 'package:demo_app/screens/home_member.dart';
+import 'package:demo_app/screens/membership_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../home_page.dart';
@@ -35,6 +37,13 @@ class _LoginPageState extends State<LoginPage> {
         context,
         MaterialPageRoute(
           builder: (_) => const AdminPage(),
+        ),
+      );
+    } else if (result == 'Member') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const HomeMember(),
         ),
       );
     } else if (result == 'User') {
