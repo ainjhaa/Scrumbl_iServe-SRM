@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:demo_app/screens/auth/login_page.dart';
 import 'package:demo_app/wrapper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,10 +19,32 @@ class _SignUpPageState extends State<SignUpPage> {
   TextEditingController password = TextEditingController();
   TextEditingController confirm = TextEditingController();
 
-  signup() async{
-    await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email.text, password: password.text);
+  signup() async {
+  try {
+    UserCredential userCredential = await FirebaseAuth.instance
+        .createUserWithEmailAndPassword(
+      email: email.text,
+      password: password.text,
+    );
+
+    User? user = userCredential.user;
+
+    if (user != null) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set({
+        'email': email.text,
+        'role': 'User', // or Admin
+      });
+    }
+
     Get.offAll(Wrapper());
+  } catch (e) {
+    print(e);
   }
+}
+
 
   void _register() async {
     if (password.text == confirm.text) {
