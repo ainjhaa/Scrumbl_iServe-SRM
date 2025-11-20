@@ -43,7 +43,7 @@ class _ActivityPageState extends State<ActivityPage> {
             const SizedBox(height: 40),
 
             // 🔹 Event Tickets Button
-            GestureDetector(
+            /*GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
@@ -54,7 +54,7 @@ class _ActivityPageState extends State<ActivityPage> {
                 iconPath: "assets/ticket.png",
                 title: "Event\nTickets",
               ),
-            ),
+            ),*/
           ],
         ),
       ),
