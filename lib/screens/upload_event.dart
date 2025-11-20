@@ -20,7 +20,8 @@ class _UploadEventState extends State<UploadEvent> {
 
   TextEditingController detailcontroller = new TextEditingController();
   TextEditingController locationcontroller = new TextEditingController();
-  final List<String> eventcategory = ["Music", "Food", "Clothing", "Festival"];
+  final List<String> eventcategory = ["Rakan Prihatin", "Rakan Demokrasi", "Rakan Muzik", "Rakan Aktif", "Rakan Ekspresi",
+                                      "Rakan Niaga","Rakan Bumi","Rakan Digital","Rakan Mahir","Rakan Litar"];
   String? value;
   final ImagePicker _picker = ImagePicker();
   File? selectedImage;
@@ -74,34 +75,15 @@ class _UploadEventState extends State<UploadEvent> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text("Upload Event"),
+      ),
       body: SingleChildScrollView(
         child: Container(
           margin: EdgeInsets.only(top: 40.0, left: 20.0, right: 20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                      child: Icon(Icons.arrow_back_ios_new_outlined)),
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width / 5.0,
-                  ),
-                  Text(
-                    "Upload Event",
-                    style: TextStyle(
-                        color: Color(0xff6351ec),
-                        fontSize: 25.0,
-                        fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              SizedBox(
-                height: 20.0,
-              ),
               selectedImage != null
                   ? Center(
                       child: ClipRRect(
@@ -390,7 +372,10 @@ class _UploadEventState extends State<UploadEvent> {
                     ),
                   ),
                 ),
-              )
+              ),
+              SizedBox(
+                height: 50.0,
+              ),
             ],
           ),
         ),
