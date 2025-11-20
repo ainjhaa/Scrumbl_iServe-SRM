@@ -82,26 +82,33 @@ class UserManagementPage extends StatelessWidget {
 // ---------------------------------------------------------
 // USER DETAILS PAGE
 // ---------------------------------------------------------
-class UserDetailsPage extends StatelessWidget {
+class UserDetailsPage extends StatefulWidget {
   final String userId;
 
   const UserDetailsPage({super.key, required this.userId});
 
   @override
+  State<UserDetailsPage> createState() => _UserDetailsPageState();
+}
+
+class _UserDetailsPageState extends State<UserDetailsPage> {
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("User Details"),
-        backgroundColor: Colors.blue,
-      ),
-      body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
+      appBar: AppBar(title: const Text("User Details")),
+      body: StreamBuilder(
+        stream: FirebaseFirestore.instance
+            .collection("users")
+            .doc(widget.userId)
+            .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
           final data = snapshot.data!;
+          String currentStatus = data['role'];
+
           return Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -111,16 +118,77 @@ class UserDetailsPage extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text("Email: ${data['email']}", style: const TextStyle(fontSize: 18)),
                 const SizedBox(height: 10),
-                Text("Status: ${data['role']}", style: const TextStyle(fontSize: 18)),
+                Text("Status: $currentStatus", style: const TextStyle(fontSize: 18)),
                 const SizedBox(height: 20),
+
+                /// 🔄 CHANGE STATUS BUTTON
                 ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Back"),
-                )
+                  onPressed: () => _showChangeStatusDialog(
+                    userId: widget.userId,
+                    currentStatus: currentStatus,
+                  ),
+                  child: const Text("Change Status"),
+                ),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  // ----------------------------------------------
+  // 🔄 Dialog + Firebase Update Function
+  // ----------------------------------------------
+  void _showChangeStatusDialog({
+    required String userId,
+    required String currentStatus,
+  }) {
+    String? selectedStatus = currentStatus;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Change User Status"),
+        content: DropdownButtonFormField<String>(
+          value: selectedStatus,
+          items: const [
+            DropdownMenuItem(value: "Admin", child: Text("Admin")),
+            DropdownMenuItem(value: "Volunteer", child: Text("Volunteer")),
+            DropdownMenuItem(value: "Member", child: Text("Member")),
+          ],
+          onChanged: (value) {
+            selectedStatus = value;
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (selectedStatus == null) return;
+
+              // 🔥 Update role in Firebase
+              await FirebaseFirestore.instance
+                  .collection("users")
+                  .doc(userId)
+                  .update({"role": selectedStatus});
+
+              Navigator.pop(context);
+
+              // 🔄 This will refresh the UI
+              setState(() {});
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Status updated successfully"),
+                                        backgroundColor: Colors.green),
+              );
+            },
+            child: const Text("Confirm"),
+          ),
+        ],
       ),
     );
   }
