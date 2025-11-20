@@ -1,5 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:demo_app/screens/act_manage_page.dart';
-import 'package:demo_app/screens/upload_event.dart';
+//import 'package:demo_app/screens/upload_event.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:demo_app/widgets/ai_chat_popup.dart';
@@ -9,6 +10,7 @@ import 'package:demo_app/screens/profile_page.dart';
 /*import 'membership_page.dart';
 import '../widgets/membership_card.dart';*/
 import 'package:demo_app/screens/placeholder_page.dart';
+import 'package:demo_app/screens/user_management.dart';
 import 'package:demo_app/widgets/nav_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -30,34 +32,58 @@ class _AdminState extends State<AdminPage> {
   }
 
   void _showLogoutDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: const Text("Confirm Logout"),
-        content: const Text("Are you sure you want to log out?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context), // Cancel
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            onPressed: () {
-              Navigator.pop(context); // close dialog
-              signout();
-            },
-            child: const Text("Logout"),
-          ),
-        ],
-      );
-    },
-  );
-}
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          title: const Text("Confirm Logout"),
+          content: const Text("Are you sure you want to log out?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context), // Cancel
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              onPressed: () {
+                Navigator.pop(context); // close dialog
+                signout();
+              },
+              child: const Text("Logout"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   signout() async{
     await FirebaseAuth.instance.signOut();
+  }
+
+  String currentUserName = "";
+
+  void getUserName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final snapshot = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .get();
+
+      if (snapshot.exists && snapshot.data()!.containsKey("name")) {
+        setState(() {
+          currentUserName = snapshot["name"];
+        });
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getUserName();
   }
 
   @override
@@ -101,12 +127,13 @@ class _AdminState extends State<AdminPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [  
-            Text("Welcome,\nAdmin SRM UTMJB!",
+            Text(
+              currentUserName.isEmpty ? "Welcome Admin SRM UTM JB!" : "Welcome, Admin $currentUserName!",
               style: const TextStyle(color: Colors.black, 
                                      fontSize: 28, 
                                      fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 15),
 
             // 🔹 Horizontal navigation buttons
             SingleChildScrollView(
@@ -117,7 +144,7 @@ class _AdminState extends State<AdminPage> {
                   icon: Icons.attribution,
                   label: "User\nManagement",
                   color: Colors.blue,
-                  destination: PlaceholderPage("User Management"),
+                  destination: UserManagementPage(),
                 ),
                 NavButton(
                   icon: Icons.track_changes,

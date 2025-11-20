@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../widgets/ai_chat_popup.dart';
@@ -56,6 +57,29 @@ class _HomeMemberState extends State<HomeMember> {
     await FirebaseAuth.instance.signOut();
   }
 
+  String currentUserName = "";
+  void getUserName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final snapshot = await FirebaseFirestore.instance
+          .collection("users")     // your users collection
+          .doc(user.uid)
+          .get();
+
+      if (snapshot.exists && snapshot.data()!.containsKey("name")) {
+        setState(() {
+          currentUserName = snapshot["name"];
+        });
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getUserName();
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -98,11 +122,12 @@ class _HomeMemberState extends State<HomeMember> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text("Welcome, Member!",
+            Text(
+              currentUserName.isEmpty ? "Welcome!" : "Welcome, $currentUserName!",
               style: const TextStyle(color: Colors.black, 
                                      fontSize: 28, 
                                      fontWeight: FontWeight.bold,
-                                     fontStyle: FontStyle.italic),
+                                     /*fontStyle: FontStyle.italic*/),
             ),
             
             const SizedBox(height: 30),
