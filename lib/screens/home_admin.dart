@@ -1,3 +1,5 @@
+import 'package:demo_app/screens/act_manage_page.dart';
+import 'package:demo_app/screens/upload_event.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:demo_app/widgets/ai_chat_popup.dart';
@@ -121,7 +123,7 @@ class _AdminState extends State<AdminPage> {
                   icon: Icons.track_changes,
                   label: "Activities\nManagement",
                   color: Colors.green,
-                  destination: PlaceholderPage("Activities Management"),
+                  destination: ActivityPage(),
                 ),
                 NavButton(
                   icon: Icons.analytics,
