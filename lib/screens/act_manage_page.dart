@@ -1,9 +1,11 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:demo_app/screens/ticket_event.dart';
 import 'package:demo_app/screens/upload_event.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:demo_app/screens/event_detail_page.dart';
+import 'package:demo_app/screens/list_events_page.dart';
 
 class ActivityPage extends StatefulWidget {
   const ActivityPage({super.key});
@@ -16,126 +18,76 @@ class _ActivityPageState extends State<ActivityPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        padding: EdgeInsets.only(top: 50.0),
-        width: MediaQuery.of(context).size.width,
-        decoration: BoxDecoration(
-            gradient: LinearGradient(
-                colors: [Color(0xffe3e6ff), Color(0xfff1f3ff), Colors.white],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight)),
+      appBar: AppBar(
+        title: Text("Activities Management"),
+      ),
+      body: Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              "Home Admin",
-              style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 30.0,
-                  fontWeight: FontWeight.bold),
-            ),
-            SizedBox(
-              height: 20.0,
-            ),
-            Expanded(
-              child: Container(
-                width: MediaQuery.of(context).size.width,
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(30),
-                        topRight: Radius.circular(30)),
-                    color: Colors.white),
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: 50.0,
-                    ),
-                    GestureDetector(
-                      onTap: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context)=> UploadEvent()));
-                      },
-                      child: Container(
-                        height: 150,
-                        width: 300,
-                        decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border:
-                                Border.all(color: Colors.black45, width: 2.0)),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 10.0,
-                            ),
-                            Image.asset(
-                              "assets/up.png",
-                              height: 100,
-                              width: 100,
-                              fit: BoxFit.cover,
-                            ),
-                            SizedBox(
-                              width: 30.0,
-                            ),
-                            Text(
-                              "Upload\nEvents",
-                              style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 28.0,
-                                  fontWeight: FontWeight.bold),
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 50.0,
-                    ),
-                    GestureDetector(
-                      onTap: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context)=> TicketEvent()));
-                      },
-                      child: Container(
-                        height: 150,
-                        width: 300,
-                        decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border:
-                                Border.all(color: Colors.black45, width: 2.0)),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 10.0,
-                            ),
-                            Image.asset(
-                              "assets/ticket.png",
-                              height: 100,
-                              width: 100,
-                              fit: BoxFit.cover,
-                            ),
-                            SizedBox(
-                              width: 30.0,
-                            ),
-                            Text(
-                              "Event\nTickets",
-                              style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 28.0,
-                                  fontWeight: FontWeight.bold),
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+
+            // 🔹 List Events Button
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ListEventsPage()),
+                );
+              },
+              child: _menuButton(
+                iconPath: "assets/up.png",
+                title: "List\nEvents",
               ),
-            )
+            ),
+
+            const SizedBox(height: 40),
+
+            // 🔹 Event Tickets Button
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TicketEvent()),
+                );
+              },
+              child: _menuButton(
+                iconPath: "assets/ticket.png",
+                title: "Event\nTickets",
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
+  // 📌 Reusable Button Widget
+  Widget _menuButton({required String iconPath, required String title}) {
+    return Container(
+      height: 150,
+      width: 300,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black45, width: 2),
+      ),
+      child: Row(
+        children: [
+          Image.asset(iconPath, height: 95, width: 95, fit: BoxFit.cover),
+          const SizedBox(width: 25),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
   Stream? eventStream;
   int eventnumber = 0;
   String? _currentCity, name;
@@ -263,7 +215,7 @@ class _ActivityPageState extends State<ActivityPage> {
               : Container();
         });
   }
-}
+
 
 
 /*
