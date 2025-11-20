@@ -4,18 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class UserManagementPage extends StatelessWidget {
   UserManagementPage({super.key});
 
-  /*// Mock list of users
-  final List<Map<String, String>> users = [
-    {"name": "Ain Najiha", "status": "Admin"},
-    {"name": "Muhammad Fikri", "status": "Volunteer"},
-    {"name": "Siti Nurhafizah", "status": "Committee"},
-    {"name": "John Doe", "status": "Volunteer"},
-    {"name": "Aisyah", "status": "Committee"},
-    {"name": "Muhammad Fikri", "status": "Volunteer"},
-    {"name": "Siti Nurhafizah", "status": "Committee"},
-    {"name": "John Doe", "status": "Volunteer"},
-    {"name": "Aisyah", "status": "Committee"},
-  ];*/
 
   Color getStatusColor(String role) {
     switch (role.toLowerCase()) {
