@@ -41,8 +41,8 @@ class ListEventsPage extends StatelessWidget {
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection('events')
-                  .orderBy('date', descending: false)
+                  .collection('Event')
+                  .orderBy('Date', descending: false)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
@@ -60,7 +60,7 @@ class ListEventsPage extends StatelessWidget {
                   itemCount: events.length,
                   itemBuilder: (context, index) {
                     final data = events[index];
-                    final eventName = data['name'] ?? "Unnamed Event";
+                    final eventName = data['Name'] ?? "Unnamed Event";
 
                     return Card(
                       elevation: 3,
@@ -69,7 +69,7 @@ class ListEventsPage extends StatelessWidget {
                         title: Text(eventName,
                             style: const TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.bold)),
-                        subtitle: Text("Date: ${data['date']}"),
+                        subtitle: Text("Date: ${data['Date']}"),
                         trailing: ElevatedButton(
                           child: const Text("View"),
                           onPressed: () {
@@ -77,12 +77,12 @@ class ListEventsPage extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => DetailPage(
-                                  date: data['date'],
-                                  detail: data['detail'],
-                                  image: data['image'],
-                                  location: data['location'],
-                                  name: data['name'],
-                                  price: data['price'],
+                                  date: data['Date'],
+                                  detail: data['Detail'],
+                                  image: data['Image'],
+                                  location: data['Location'],
+                                  name: data['Name'],
+                                  price: data['Price'].toString().replaceAll("RM", ""),
                                 ),
                               ),
                             );
