@@ -41,8 +41,8 @@ class ListEventsPage extends StatelessWidget {
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection('events')
-                  .orderBy('date', descending: false)
+                  .collection('Event') // <-- Use correct name from Firestore
+                  .orderBy('Date')     // <-- Must match Firestore field
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
@@ -60,16 +60,16 @@ class ListEventsPage extends StatelessWidget {
                   itemCount: events.length,
                   itemBuilder: (context, index) {
                     final data = events[index];
-                    final eventName = data['name'] ?? "Unnamed Event";
 
                     return Card(
                       elevation: 3,
                       margin: const EdgeInsets.symmetric(vertical: 10),
                       child: ListTile(
-                        title: Text(eventName,
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        subtitle: Text("Date: ${data['date']}"),
+                        title: Text(
+                          data['Name'] ?? "Unnamed Event",
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text("Date: ${data['Date']}"),
                         trailing: ElevatedButton(
                           child: const Text("View"),
                           onPressed: () {
@@ -77,12 +77,12 @@ class ListEventsPage extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => DetailPage(
-                                  date: data['date'],
-                                  detail: data['detail'],
-                                  image: data['image'],
-                                  location: data['location'],
-                                  name: data['name'],
-                                  price: data['price'],
+                                  name: data['Name'],
+                                  date: data['Date'],
+                                  detail: data['Detail'],
+                                  image: data['Image'],
+                                  location: data['Location'],
+                                  price: data['Price'].toString().replaceAll("RM", ""),
                                 ),
                               ),
                             );
@@ -94,7 +94,8 @@ class ListEventsPage extends StatelessWidget {
                 );
               },
             ),
-          ),
+          )
+
         ],
       ),
     );
