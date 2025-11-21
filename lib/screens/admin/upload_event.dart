@@ -322,7 +322,7 @@ class _UploadEventState extends State<UploadEvent> {
                   //     firebaseStorageRef.putFile(selectedImage!);
 
                   // var downloadUrl = await (await task).ref.getDownloadURL();
-                  String id = randomAlphaNumeric(10);
+                  String id = randomNumeric(10);
                    String firstletter =
                               namecontroller.text.substring(0, 1).toUpperCase();
                   Map<String, dynamic> uploadevent = {
@@ -336,6 +336,7 @@ class _UploadEventState extends State<UploadEvent> {
                     "UpdatedName": namecontroller.text.toUpperCase(),
                     "Date": DateFormat('yyyy-MM-dd').format(selectedDate!),
                     "Time": formatTimeOfDay(selectedTime!),
+                    "id": id,
                   };
                   await DatabaseMethods()
                       .addEvent(uploadevent, id)

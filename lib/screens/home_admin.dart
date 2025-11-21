@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:demo_app/screens/act_manage_page.dart';
+import 'package:demo_app/screens/admin/act_manage_page.dart';
 //import 'package:demo_app/screens/upload_event.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +10,7 @@ import 'package:demo_app/screens/profile_page.dart';
 /*import 'membership_page.dart';
 import '../widgets/membership_card.dart';*/
 import 'package:demo_app/screens/placeholder_page.dart';
-import 'package:demo_app/screens/user_management.dart';
+import 'package:demo_app/screens/admin/user_management.dart';
 import 'package:demo_app/widgets/nav_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 

@@ -1,11 +1,11 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:demo_app/screens/ticket_event.dart';
-import 'package:demo_app/screens/upload_event.dart';
+import 'package:demo_app/screens/admin/upload_event.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:demo_app/screens/event_detail_page.dart';
-import 'package:demo_app/screens/list_events_page.dart';
+import 'package:demo_app/screens/admin/event_detail_page.dart';
+import 'package:demo_app/screens/admin/list_events_page.dart';
 
 class ActivityPage extends StatefulWidget {
   const ActivityPage({super.key});
@@ -123,13 +123,16 @@ class _ActivityPageState extends State<ActivityPage> {
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) => DetailPage(
+                                      builder: (context) => AdminEventDetailPage(
                                           date: ds["Date"],
                                           detail: ds["Detail"],
                                           image: ds["Image"],
                                           location: ds["Location"],
                                           name: ds["Name"],
-                                          price: ds["Price"])));
+                                          id: ds.id,
+                                          category: ds["Category"],
+                                          //price: ds["Price"]
+                                        )));
                             },
                             child: Column(children: [
                               Container(

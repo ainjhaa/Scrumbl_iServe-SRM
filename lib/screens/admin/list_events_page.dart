@@ -76,13 +76,15 @@ class ListEventsPage extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => DetailPage(
+                                builder: (_) => AdminEventDetailPage(
                                   date: data['Date'],
                                   detail: data['Detail'],
                                   image: data['Image'],
                                   location: data['Location'],
                                   name: data['Name'],
-                                  price: data['Price'].toString().replaceAll("RM", ""),
+                                  id: data.id,
+                                  category: data['Category'],
+                                  //price: data['Price'].toString().replaceAll("RM", ""),
                                 ),
                               ),
                             );
@@ -91,10 +93,14 @@ class ListEventsPage extends StatelessWidget {
                       ),
                     );
                   },
+                  
                 );
               },
+              
             ),
+            
           ),
+          
         ],
       ),
     );
