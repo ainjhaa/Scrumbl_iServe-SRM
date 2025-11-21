@@ -8,6 +8,7 @@ import 'profile_page.dart';
 import 'placeholder_page.dart';
 import '../widgets/nav_button.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'user/list_events_page.dart';
 
 class HomeMember extends StatefulWidget {
   const HomeMember({super.key});
@@ -142,14 +143,14 @@ class _HomeMemberState extends State<HomeMember> {
                     icon: Icons.calendar_month,
                     label: "Upcoming\nPrograms",
                     color: Colors.blue,
-                    destination: PlaceholderPage("Gallery"),
+                    destination: ListEventsPage(),
                   ),
                   SizedBox(width: 10), // 👈 spacing between buttons
                   NavButton(
                     icon: Icons.track_changes,
                     label: "My Activities\n",
                     color: Colors.green,
-                    destination: PlaceholderPage("Events"),
+                    destination: PlaceholderPage("My Activities"),
                   ),
                   SizedBox(width: 10),
                   NavButton(

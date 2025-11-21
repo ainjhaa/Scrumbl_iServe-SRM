@@ -7,9 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
 
-class DetailPage extends StatefulWidget {
+class EDetailPage extends StatefulWidget {
   String image, name, location, date, detail, price;
-  DetailPage(
+  EDetailPage(
       {required this.date,
       required this.detail,
       required this.image,
@@ -17,10 +17,10 @@ class DetailPage extends StatefulWidget {
       required this.name,
       required this.price});
   @override
-  State<DetailPage> createState() => _DetailPageState();
+  State<EDetailPage> createState() => _DetailPageState();
 }
 
-class _DetailPageState extends State<DetailPage> {
+class _DetailPageState extends State<EDetailPage> {
   Map<String, dynamic>? paymentIntent;
   int ticket = 1;
   int total = 0;

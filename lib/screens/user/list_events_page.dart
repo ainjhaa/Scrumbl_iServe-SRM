@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'event_detail_page.dart';
+import 'package:demo_app/screens/user/event_detail_page.dart';
 
 
 class ListEventsPage extends StatelessWidget {
@@ -56,7 +56,7 @@ class ListEventsPage extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => DetailPage(
+                                builder: (_) => EDetailPage(
                                   date: data['Date'],
                                   detail: data['Detail'],
                                   image: data['Image'],
