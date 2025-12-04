@@ -83,6 +83,11 @@ flutter:
     - assets/rakan_bumi.png
     - assets/rakan_demokrasi.png
     - assets/rakan_aktif.png
+    - assets/rakan_muzik.png
+    - assets/rakan_mahir.png
+    - assets/rakan_litar.png
+    - assets/rakan_ekspresi.png
+    - assets/rakan_digital.png 
     - assets/srm_logo.png
     - assets/profile.png
     - assets/ticket.png

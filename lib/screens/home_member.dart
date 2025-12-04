@@ -9,6 +9,7 @@ import 'placeholder_page.dart';
 import '../widgets/nav_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'user/list_events_page.dart';
+import 'user/badge_page.dart';
 
 class HomeMember extends StatefulWidget {
   const HomeMember({super.key});
@@ -157,7 +158,7 @@ class _HomeMemberState extends State<HomeMember> {
                     icon: Icons.workspace_premium,
                     label: "Digital Badge\n",
                     color: Colors.orange,
-                    destination: PlaceholderPage("Profile"),
+                    destination: BadgePage(),
                   ),
                   SizedBox(width: 10), // optional spacing at end
                 ], // NavButtons
