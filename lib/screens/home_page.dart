@@ -165,11 +165,9 @@ class _HomePageState extends State<HomePage> {
                     destination: PlaceholderPage("Events"),
                   ),
                   SizedBox(width: 10),
-                  NavButton(
+                  LockedNavButton(
                     icon: Icons.workspace_premium,
                     label: "Digital Badge\n",
-                    color: Colors.orange,
-                    destination: PlaceholderPage("Profile"),
                   ),
                   SizedBox(width: 10), // optional spacing at end
                 ], // NavButtons
