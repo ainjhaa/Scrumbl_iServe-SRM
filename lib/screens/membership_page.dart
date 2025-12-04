@@ -19,6 +19,11 @@ import 'register_member.dart';
 class MembershipPage extends StatefulWidget {
   const MembershipPage({super.key});
 
+  Stream<DocumentSnapshot> getMembershipStatus() {
+    final user = FirebaseAuth.instance.currentUser!;
+    return FirebaseFirestore.instance.collection('membership_requests').doc(user.uid).snapshots();
+  }
+
   @override
   State<MembershipPage> createState() => _MembershipPage();
 }
@@ -30,22 +35,41 @@ class _MembershipPage extends State<MembershipPage> {
   UploadTask? uploadTask;
 
   Future uploadFile() async {
-    final path = 'files/${pickedFile!.name}';
+    if (pickedFile == null) return;
+
+    final user = FirebaseAuth.instance.currentUser!;
     final file = File(pickedFile!.path!);
 
+    final path = 'membership_uploads/${user.uid}/${pickedFile!.name}';
     final ref = FirebaseStorage.instance.ref().child(path);
+
     setState(() {
       uploadTask = ref.putFile(file);
     });
 
     final snapshot = await uploadTask!.whenComplete(() {});
-
     final urlDownload = await snapshot.ref.getDownloadURL();
-    print('Download Link: $urlDownload');
 
-    setState(() {
-      uploadTask = null;
-    });
+    // Save metadata to Firestore
+    await FirebaseFirestore.instance
+        .collection('membership_requests')
+        .doc(user.uid)
+      .set({
+      'uid': user.uid,
+      'email': user.email,
+      'fileName': pickedFile!.name,
+      'fileUrl': urlDownload,
+      'uploadedAt': FieldValue.serverTimestamp(),
+      'status': 'pending',
+      });
+
+    setState(() => uploadTask = null);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("File uploaded successfully!")),
+    );
+
+    print('Download Link: $urlDownload');
   }
 
   Future selectFile() async {
@@ -57,10 +81,8 @@ class _MembershipPage extends State<MembershipPage> {
     });
   }
 
-  
-
   @override
-Widget buildProgress() => StreamBuilder<TaskSnapshot>(
+  Widget buildProgress() => StreamBuilder<TaskSnapshot>(
       stream: uploadTask?.snapshotEvents,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
@@ -111,15 +133,6 @@ Widget buildProgress() => StreamBuilder<TaskSnapshot>(
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 15),
-            // 🔹 Membership promo card
-            MembershipCard(
-              title: "Join Membership!",
-              subtitle: "Unlock exclusive features and more community benefits.",
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const RegisterMember()),
-              ),
-            ),
 
             if (pickedFile != null)
               Container(
