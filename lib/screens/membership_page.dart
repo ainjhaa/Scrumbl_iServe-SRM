@@ -19,17 +19,17 @@ import 'register_member.dart';
 class MembershipPage extends StatefulWidget {
   const MembershipPage({super.key});
 
-  Stream<DocumentSnapshot> getMembershipStatus() {
-    final user = FirebaseAuth.instance.currentUser!;
-    return FirebaseFirestore.instance.collection('membership_requests').doc(user.uid).snapshots();
-  }
-
   @override
   State<MembershipPage> createState() => _MembershipPage();
 }
 
 class _MembershipPage extends State<MembershipPage> {
   //const _MembershipPage({super.key});
+
+  Stream<DocumentSnapshot> getMembershipStatus() {
+    final user = FirebaseAuth.instance.currentUser!;
+    return FirebaseFirestore.instance.collection('registrations').doc(user.uid).snapshots();
+  }
 
   PlatformFile? pickedFile;
   UploadTask? uploadTask;
@@ -40,7 +40,7 @@ class _MembershipPage extends State<MembershipPage> {
     final user = FirebaseAuth.instance.currentUser!;
     final file = File(pickedFile!.path!);
 
-    final path = 'membership_uploads/${user.uid}/${pickedFile!.name}';
+    final path = 'registrations/${user.uid}/${pickedFile!.name}';
     final ref = FirebaseStorage.instance.ref().child(path);
 
     setState(() {
@@ -51,17 +51,23 @@ class _MembershipPage extends State<MembershipPage> {
     final urlDownload = await snapshot.ref.getDownloadURL();
 
     // Save metadata to Firestore
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+
+    String name = userDoc['name'];   // READ NAME FROM USERS COLLECTION
+
     await FirebaseFirestore.instance
-        .collection('membership_requests')
-        .doc(user.uid)
+      .collection('registrations')
+      .doc(user.uid)
       .set({
       'uid': user.uid,
       'email': user.email,
+      'name': name,     // <<< ADD THIS
       'fileName': pickedFile!.name,
       'fileUrl': urlDownload,
       'uploadedAt': FieldValue.serverTimestamp(),
       'status': 'pending',
       });
+
 
     setState(() => uploadTask = null);
 
@@ -82,6 +88,110 @@ class _MembershipPage extends State<MembershipPage> {
   }
 
   @override
+  Widget buildUploadSection() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          const Icon(Icons.workspace_premium, color: Colors.amber, size: 100),
+          const SizedBox(height: 20),
+          const Text(
+            "Become a Premium Member",
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            "Access exclusive content, faster support, and VIP events!",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+          const SizedBox(height: 20),
+
+          if (pickedFile != null)
+            Container(
+              height: 150,
+              width: double.infinity,
+              color: Colors.blue[100],
+              child: Center(child: Text(pickedFile!.name)),
+            ),
+
+          const SizedBox(height: 32),
+          ElevatedButton(
+            child: const Text('Select File'),
+            onPressed: selectFile,
+          ),
+          const SizedBox(height: 32),
+
+          ElevatedButton(
+            child: const Text('Upload File'),
+            onPressed: uploadFile,
+          ),
+
+          const SizedBox(height: 32),
+          buildProgress(),
+        ],
+      ),
+    );
+  }
+
+  Widget buildPendingSection() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Icon(Icons.hourglass_top, color: Colors.orange, size: 100),
+          SizedBox(height: 20),
+          Text(
+            "Your membership request is pending.",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 10),
+          Text("Please wait for admin approval."),
+        ],
+      ),
+    );
+  }
+
+  Widget buildApprovedSection() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Icon(Icons.verified, color: Colors.green, size: 100),
+          SizedBox(height: 20),
+          Text(
+            "You are now a Premium Member!",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildRejectedSection() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.cancel, color: Colors.red, size: 100),
+          const SizedBox(height: 20),
+          const Text(
+            "Your membership request was rejected.",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: () {
+              // allow re-apply
+              FirebaseFirestore.instance.collection('membership_requests').doc(FirebaseAuth.instance.currentUser!.uid).delete();
+            },
+            child: const Text("Reapply"),
+          )
+        ],
+      ),
+    );
+  }
+
   Widget buildProgress() => StreamBuilder<TaskSnapshot>(
       stream: uploadTask?.snapshotEvents,
       builder: (context, snapshot) {
@@ -116,46 +226,33 @@ class _MembershipPage extends State<MembershipPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Membership Program")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const Icon(Icons.workspace_premium, color: Colors.amber, size: 100),
-            const SizedBox(height: 20),
-            const Text(
-              "Become a Premium Member",
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              "Access exclusive content, faster support, and VIP events!",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 15),
+      body: StreamBuilder<DocumentSnapshot>(
+  stream: getMembershipStatus(),
+  builder: (context, snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-            if (pickedFile != null)
-              Container(
-                height: 150,
-                width: double.infinity,
-                color: Colors.blue[100],
-                child: Center(child: Text(pickedFile!.name)),
-              ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              child: const Text('Select File'),
-              onPressed: selectFile,
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              child: const Text('Upload File'),
-              onPressed: uploadFile,
-            ),
-            const SizedBox(height: 32),
-            buildProgress(),
-          ],
-        ),
-      ),
+    // If user has NOT applied yet
+    if (!snapshot.hasData || !snapshot.data!.exists) {
+      return buildUploadSection();
+    }
+
+    final data = snapshot.data!.data() as Map<String, dynamic>;
+    final status = data['status'] ?? 'pending';
+
+    if (status == 'pending') {
+      return buildPendingSection();
+    } else if (status == 'approved') {
+      return buildApprovedSection();
+    } else if (status == 'rejected') {
+      return buildRejectedSection();
+    }
+
+    return buildUploadSection(); // fallback
+  },
+),
+
     );
   }
 }
