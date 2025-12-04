@@ -46,7 +46,8 @@ dependencies:
   video_thumbnail: ^0.5.6
   image_picker:
   curved_navigation_bar:
-  firebase_storage:
+  firebase_storage: ^13.0.4
+  file_picker: ^10.3.7
   random_string:
   intl: ^0.18.0
   flutter_stripe: 
