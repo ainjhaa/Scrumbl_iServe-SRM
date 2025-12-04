@@ -13,6 +13,7 @@ import 'package:demo_app/screens/placeholder_page.dart';
 import 'package:demo_app/screens/admin/user_management.dart';
 import 'package:demo_app/widgets/nav_button.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:demo_app/screens/admin/report_page.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -156,7 +157,8 @@ class _AdminState extends State<AdminPage> {
                   icon: Icons.analytics,
                   label: "Report\n",
                   color: Colors.orange,
-                  destination: PlaceholderPage("Report"),),
+                  destination: ReportPage(),
+                  ),
                 ], // NavButtons
               ),
             ),
