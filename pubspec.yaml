@@ -88,12 +88,13 @@ flutter:
     - assets/rakan_mahir.png
     - assets/rakan_litar.png
     - assets/rakan_ekspresi.png
-    - assets/rakan_digital.png 
-    - assets/srm_logo.png
+    - assets/rakan_digital.png
+    - assets/srm_logo.jpg
     - assets/profile.png
     - assets/ticket.png
     - assets/up.png
     - assets/news1.jpg
+    - assets/qrbank.jpg
   #  - assets/images/default.jpg
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
