@@ -1,10 +1,8 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:demo_app/screens/ticket_event.dart';
+import 'package:demo_app/screens/admin/event_detail_page.dart';
 import 'package:demo_app/screens/admin/upload_event.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:demo_app/screens/admin/event_detail_page.dart';
 import 'package:demo_app/screens/admin/list_events_page.dart';
 
 class ActivityPage extends StatefulWidget {
@@ -15,47 +13,77 @@ class ActivityPage extends StatefulWidget {
 }
 
 class _ActivityPageState extends State<ActivityPage> {
+  Stream<QuerySnapshot>? eventStream;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Load events in real-time
+    eventStream = FirebaseFirestore.instance
+        .collection('Event')
+        .orderBy('Date')
+        .snapshots();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Activities Management"),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
 
-            // 🔹 List Events Button
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ListEventsPage()),
-                );
-              },
-              child: _menuButton(
-                iconPath: "assets/up.png",
-                title: "List\nEvents",
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            children: [
+
+              // 🔹 List Events Button
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ListEventsPage()),
+                  );
+                },
+                child: _menuButton(
+                  iconPath: "assets/up.png",
+                  title: "List\nEvents",
+                ),
               ),
-            ),
 
-            const SizedBox(height: 40),
+              const SizedBox(height: 30),
 
-            // 🔹 Event Tickets Button
-            /*GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const TicketEvent()),
-                );
-              },
-              child: _menuButton(
-                iconPath: "assets/ticket.png",
-                title: "Event\nTickets",
+              // 🔹 Upload Event Button
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const UploadEvent()),
+                  );
+                },
+                child: _menuButton(
+                  iconPath: "assets/up.png",
+                  title: "Upload\nEvent",
+                ),
               ),
-            ),*/
-          ],
+
+              const SizedBox(height: 40),
+
+              // 🔹 Show All Upcoming Events
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Text(
+                  "Upcoming Events",
+                  style: TextStyle(
+                      fontSize: 26, fontWeight: FontWeight.bold),
+                ),
+              ),
+
+              _allEventsWidget(),
+            ],
+          ),
         ),
       ),
     );
@@ -87,148 +115,117 @@ class _ActivityPageState extends State<ActivityPage> {
       ),
     );
   }
-}
-  Stream? eventStream;
-  int eventnumber = 0;
-  String? _currentCity, name;
-  
-  Widget allEvents() {
+
+  // 🔥 FIXED EVENT LIST SECTION
+  Widget _allEventsWidget() {
     return StreamBuilder(
-        stream: eventStream,
-        builder: (context, AsyncSnapshot snapshot) {
-          return snapshot.hasData
-              ? ListView.builder(
-                  padding: EdgeInsets.zero,
-                  shrinkWrap: true,
-                  itemCount: snapshot.data.docs.length,
-                  itemBuilder: (context, index) {
-                    DocumentSnapshot ds = snapshot.data.docs[index];
+      stream: eventStream,
+      builder: (context, AsyncSnapshot snapshot) {
+        if (!snapshot.hasData) {
+          return Center(child: CircularProgressIndicator());
+        }
 
-                    if (_currentCity == ds["Location"]) {
-                      eventnumber = eventnumber + 1;
-                    }
+        final docs = snapshot.data.docs;
 
-                    String inputDate = ds["Date"];
-                    DateTime parsedDate = DateTime.parse(inputDate);
-                    String formattedDate =
-                        DateFormat('MMM, dd').format(parsedDate);
+        return ListView.builder(
+          padding: EdgeInsets.zero,
+          physics: NeverScrollableScrollPhysics(), // allow outside scroll
+          shrinkWrap: true,
+          itemCount: docs.length,
+          itemBuilder: (context, index) {
+            DocumentSnapshot ds = docs[index];
 
-                    DateTime currentDate = DateTime.now();
-                    bool hasPassed = currentDate.isAfter(parsedDate);
+            // Format date
+            DateTime parsedDate = DateTime.parse(ds["Date"]);
+            String formattedDate =
+                DateFormat('MMM dd').format(parsedDate);
 
-                    return hasPassed
-                        ? Container()
-                        : GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => AdminEventDetailPage(
-                                          date: ds["Date"],
-                                          detail: ds["Detail"],
-                                          image: ds["Image"],
-                                          location: ds["Location"],
-                                          name: ds["Name"],
-                                          id: ds.id,
-                                          category: ds["Category"],
-                                          //price: ds["Price"]
-                                        )));
-                            },
-                            child: Column(children: [
-                              Container(
-                                margin: EdgeInsets.only(right: 20.0),
-                                width: MediaQuery.of(context).size.width,
-                                decoration: BoxDecoration(),
-                                child: Stack(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: Image.asset(
-                                        "images/event.jpg",
-                                        height: 200,
-                                        width:
-                                            MediaQuery.of(context).size.width,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                    Container(
-                                      margin: EdgeInsets.only(
-                                          left: 10.0, top: 10.0),
-                                      width: 50,
-                                      decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius:
-                                              BorderRadius.circular(10)),
-                                      child: Center(
-                                        child: Text(
-                                          formattedDate,
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                              color: Colors.black,
-                                              fontSize: 18.0,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                    )
-                                  ],
+            // Hide past events
+            if (DateTime.now().isAfter(parsedDate)) {
+              return Container();
+            }
+
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AdminEventDetailPage(eventId: ds.id),
+                  ),
+                );
+              },
+              child: Column(
+                children: [
+                  Container(
+                    margin: EdgeInsets.only(right: 20),
+                    width: MediaQuery.of(context).size.width,
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: ds["Image"] != null && ds["Image"] != ""
+                              ? Image.network(
+                                  ds["Image"],
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.asset(
+                                  "images/event.jpg",
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
                                 ),
-                              ),
-                              SizedBox(
-                                height: 5.0,
-                              ),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    ds["Name"],
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 24.0,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 20.0),
-                                    child: Text(
-                                      "\$" + ds["Price"],
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          color: Color(0xff6351ec),
-                                          fontSize: 24.0,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Row(children: [
-                                Icon(Icons.location_on),
-                                Text(
-                                  ds["Location"],
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 22.0,
-                                      fontWeight: FontWeight.w500),
-                                ),
-                              ])
-                            ]),
-                          );
-                  })
-              : Container();
-        });
+                        ),
+                        Container(
+                          margin: EdgeInsets.only(left: 10, top: 10),
+                          padding:
+                              EdgeInsets.symmetric(vertical: 4, horizontal: 10),
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10)),
+                          child: Text(
+                            formattedDate,
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: 5),
+
+                  // Event Title + Price
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        ds["Name"],
+                        style: TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+
+                  Row(
+                    children: [
+                      Icon(Icons.location_on),
+                      Text(
+                        ds["Location"],
+                        style: TextStyle(
+                            fontSize: 22, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 20),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
-
-
-
-/*
-class EventMediaModel {
-
-  File? image;
-  File? video;
-  bool? isVideo;
-  Uint8List? thumbnail;
-  EventMediaModel({this.image, this.video, this.isVideo, this.thumbnail});
-
 }
-*/
