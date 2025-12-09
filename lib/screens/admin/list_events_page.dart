@@ -9,7 +9,6 @@ class ListEventsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       appBar: AppBar(
         title: const Text("Events List"),
       ),
@@ -60,15 +59,18 @@ class ListEventsPage extends StatelessWidget {
                   itemCount: events.length,
                   itemBuilder: (context, index) {
                     final data = events[index];
-                    final eventName = data['Name'] ?? "Unnamed Event";
 
                     return Card(
                       elevation: 3,
                       margin: const EdgeInsets.symmetric(vertical: 10),
                       child: ListTile(
-                        title: Text(eventName,
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
+                        title: Text(
+                          data['Name'] ?? "Unnamed Event",
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         subtitle: Text("Date: ${data['Date']}"),
                         trailing: ElevatedButton(
                           child: const Text("View"),
@@ -76,16 +78,8 @@ class ListEventsPage extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => AdminEventDetailPage(
-                                  date: data['Date'],
-                                  detail: data['Detail'],
-                                  image: data['Image'],
-                                  location: data['Location'],
-                                  name: data['Name'],
-                                  id: data.id,
-                                  category: data['Category'],
-                                  //price: data['Price'].toString().replaceAll("RM", ""),
-                                ),
+                                builder: (_) =>
+                                    AdminEventDetailPage(eventId: data.id),
                               ),
                             );
                           },
@@ -93,14 +87,10 @@ class ListEventsPage extends StatelessWidget {
                       ),
                     );
                   },
-                  
                 );
               },
-              
             ),
-            
           ),
-          
         ],
       ),
     );
