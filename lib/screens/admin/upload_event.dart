@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:demo_app/services/database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -312,21 +311,30 @@ class _UploadEventState extends State<UploadEvent> {
               ),
               GestureDetector(
                 onTap: () async {
-                  // String addId = randomAlphaNumeric(10);
-                  // Reference firebaseStorageRef = FirebaseStorage.instance
-                  //     .ref()
-                  //     .child("blogImages")
-                  //     .child(addId);
-
-                  // final UploadTask task =
-                  //     firebaseStorageRef.putFile(selectedImage!);
-
-                  // var downloadUrl = await (await task).ref.getDownloadURL();
+                  if (selectedImage == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Please select an image first")),
+                    );
+                    return;
+                  }
+                  
                   String id = randomNumeric(10);
-                   String firstletter =
-                              namecontroller.text.substring(0, 1).toUpperCase();
+                  
+                  // 1️⃣ Upload image to Firebase Storage
+                  Reference ref = FirebaseStorage.instance
+                  .ref()
+                  .child("eventImages")
+                  .child(id);
+                  
+                  UploadTask uploadTask = ref.putFile(selectedImage!);
+                  TaskSnapshot snapshot = await uploadTask;
+                  String downloadUrl = await snapshot.ref.getDownloadURL();
+                  
+                  // 2️⃣ Prepare data
+                  String firstletter = namecontroller.text.substring(0, 1).toUpperCase();
+                  
                   Map<String, dynamic> uploadevent = {
-                    "Image": "",
+                    "Image": downloadUrl,
                     "Name": namecontroller.text,
                     "Price": pricecontroller.text,
                     "Category": value,
@@ -334,27 +342,30 @@ class _UploadEventState extends State<UploadEvent> {
                     "Location": locationcontroller.text,
                     "Detail": detailcontroller.text,
                     "UpdatedName": namecontroller.text.toUpperCase(),
-                    "Date": DateFormat('yyyy-MM-dd').format(selectedDate!),
-                    "Time": formatTimeOfDay(selectedTime!),
+                    "Date": DateFormat('yyyy-MM-dd').format(selectedDate),
+                    "Time": formatTimeOfDay(selectedTime),
                     "id": id,
                   };
-                  await DatabaseMethods()
-                      .addEvent(uploadevent, id)
-                      .then((value) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        backgroundColor: Colors.green,
-                        content: Text(
-                          "Event Uploaded Successfully!",
-                          style: TextStyle(fontSize: 20.0),
-                        )));
-                    setState(() {
-                      namecontroller.text = "";
-                      pricecontroller.text = "";
-                      detailcontroller.text = "";
-                      selectedImage = null;
-                    });
+                  
+                  // 3️⃣ Store into Firestore
+                  await DatabaseMethods().addEvent(uploadevent, id);
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: Colors.green,
+                      content: Text("Event Uploaded Successfully!",
+                      style: TextStyle(fontSize: 20)),
+                    ),
+                  );
+                  
+                  setState(() {
+                    namecontroller.clear();
+                    pricecontroller.clear();
+                    detailcontroller.clear();
+                    selectedImage = null;
                   });
                 },
+
                 child: Center(
                   child: Container(
                     height: 50,
