@@ -56,14 +56,7 @@ class ListEventsPage extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => EDetailPage(
-                                  date: data['Date'],
-                                  detail: data['Detail'],
-                                  image: data['Image'],
-                                  location: data['Location'],
-                                  name: data['Name'],
-                                  price: data['Price'].toString().replaceAll("RM", ""),
-                                ),
+                                builder: (_) => EDetailPage(eventId: data.id),
                               ),
                             );
                           },
