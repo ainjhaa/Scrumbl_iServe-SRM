@@ -1,372 +1,303 @@
-import 'dart:convert';
-
-import 'package:demo_app/services/data.dart';
-import 'package:demo_app/services/database.dart';
-import 'package:demo_app/services/shared_pref.dart';
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:demo_app/services/shared_pref.dart';
 
 class EDetailPage extends StatefulWidget {
-  String image, name, location, date, detail, price;
-  EDetailPage(
-      {required this.date,
-      required this.detail,
-      required this.image,
-      required this.location,
-      required this.name,
-      required this.price});
+  final String eventId;
+
+  const EDetailPage({super.key, required this.eventId});
+
   @override
-  State<EDetailPage> createState() => _DetailPageState();
+  State<EDetailPage> createState() => _EDetailPageState();
 }
 
-class _DetailPageState extends State<EDetailPage> {
-  Map<String, dynamic>? paymentIntent;
+class _EDetailPageState extends State<EDetailPage> {
   int ticket = 1;
   int total = 0;
-  String? name, image, id;
+
+  // User info variables
+  String? userId;
+  String? userName;
+  String? userImage;
+  bool loadingUser = true;
 
   @override
   void initState() {
-    total = int.parse(widget.price);
-    ontheload();
     super.initState();
+    loadUserInfo();
   }
 
-  ontheload() async {
-    name = await SharedpreferenceHelper().getUserName();
-    image = await SharedpreferenceHelper().getUserImage();
-    id = await SharedpreferenceHelper().getUserId();
-    setState(() {});
+  // Fetch user info from shared preferences
+  Future<void> loadUserInfo() async {
+    userId = await SharedpreferenceHelper().getUserId();
+    userName = await SharedpreferenceHelper().getUserName();
+    userImage = await SharedpreferenceHelper().getUserImage();
+    setState(() {
+      loadingUser = false;
+    }); // rebuild UI after loading
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Wait until user info is loaded
+    if (loadingUser) {
+      return Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Scaffold(
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+        .collection("Event")
+        .doc(widget.eventId)
+        .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return Center(child: CircularProgressIndicator());
+          }
+          
+          // Check if the document exists
+          if (!snapshot.data!.exists) {
+            return Center(child: Text("Event not found"));
+          }
+
+          var data = snapshot.data!;
+          String name = data["Name"];
+          String image = data["Image"];
+          String location = data["Location"];
+          String date = data["Date"];
+          String detail = data["Detail"];
+          int price =
+              int.parse(data["Price"].toString().replaceAll("RM", ""));
+
+          total = price * ticket;
+
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ... Your existing event UI code ...
+                Stack(children: [ image != "" ? Image.network( image, height: MediaQuery.of(context).size.height / 2, width: MediaQuery.of(context).size.width, fit: BoxFit.cover, ) : Image.asset( "images/event.jpg", height: MediaQuery.of(context).size.height / 2, width: MediaQuery.of(context).size.width, fit: BoxFit.cover, ), Container( height: MediaQuery.of(context).size.height / 2, child: Column( mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [ GestureDetector( onTap: () => Navigator.pop(context), child: Container( padding: EdgeInsets.all(8), margin: EdgeInsets.only(top: 40.0, left: 20.0), decoration: BoxDecoration( color: Colors.white, borderRadius: BorderRadius.circular(30), ), child: Icon(Icons.arrow_back_ios_new_outlined), ), ), Container( width: double.infinity, padding: EdgeInsets.all(20), color: Colors.black54, child: Column( crossAxisAlignment: CrossAxisAlignment.start, children: [ Text(name, style: TextStyle( color: Colors.white, fontSize: 25, fontWeight: FontWeight.bold)), Row( children: [ Icon(Icons.calendar_month, color: Colors.white), SizedBox(width: 10), Text(date, style: TextStyle( color: Colors.white, fontSize: 18)), SizedBox(width: 20), Icon(Icons.location_on_outlined, color: Colors.white), SizedBox(width: 10), Text(location, style: TextStyle( color: Colors.white, fontSize: 18)), ], ) ], ), ) ], ), ) ]), SizedBox(height: 20), Padding( padding: EdgeInsets.only(left: 20), child: Text("About Event", style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)), ), SizedBox(height: 10), Padding( padding: EdgeInsets.symmetric(horizontal: 20), child: Text(detail, style: TextStyle( fontSize: 17, fontWeight: FontWeight.w500)), ), SizedBox(height: 20), Padding( padding: EdgeInsets.symmetric(horizontal: 20), child: Row(children: [ Text("Tickets", style: TextStyle( fontSize: 22, fontWeight: FontWeight.bold)), SizedBox(width: 40), Container( width: 50, decoration: BoxDecoration( border: Border.all(width: 2), borderRadius: BorderRadius.circular(10)), child: Column( children: [ GestureDetector( onTap: () => setState(() => ticket++), child: Text("+", style: TextStyle(fontSize: 25))), Text(ticket.toString(), style: TextStyle( fontSize: 25, fontWeight: FontWeight.bold, color: Color(0xff6351ec))), GestureDetector( onTap: () { if (ticket > 1) setState(() => ticket--); }, child: Text("-", style: TextStyle(fontSize: 25))), ], ), ) ]), ), SizedBox(height: 20),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(children: [
+                    Text("Amount: RM$total",
+                        style: TextStyle(
+                            fontSize: 23,
+                            color: Color(0xff6351ec),
+                            fontWeight: FontWeight.bold)),
+                    SizedBox(width: 20),
+                    GestureDetector(
+                      onTap: () {
+                        // Pass user info to PaymentPage
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PaymentPage(
+                              eventId: widget.eventId,
+                              userId: userId!,
+                              userName: userName!,
+                              userImage: userImage!,
+                              amount: total.toString(),
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 150,
+                        height: 50,
+                        decoration: BoxDecoration(
+                            color: Color(0xff6351ec),
+                            borderRadius: BorderRadius.circular(10)),
+                        child: Center(
+                          child: Text("Book Now",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    )
+                  ]),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+/// PAYMENT PAGE INSIDE SAME FILE
+//////////////////////////////////////////////////////////////////////////////
+
+class PaymentPage extends StatefulWidget {
+  final String eventId;
+  final String userId;
+  final String amount;
+  final String userName;
+  final String userImage;
+
+  PaymentPage({
+    required this.eventId,
+    required this.userId,
+    required this.amount,
+    required this.userName,
+    required this.userImage,
+  });
+
+  @override
+  State<PaymentPage> createState() => _PaymentPageState();
+}
+
+class _PaymentPageState extends State<PaymentPage> {
+  String? pdfFilePath;
+  bool uploading = false;
+
+  // Pick PDF from device
+  Future<void> pickPdf() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        pdfFilePath = result.files.single.path!;
+      });
+    }
+  }
+
+  // Upload PDF and create mirror records
+  Future<void> uploadPayment() async {
+    if (pdfFilePath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Please upload a PDF receipt")),
+      );
+      return;
+    }
+
+    setState(() => uploading = true);
+
+    try {
+      File pdfFile = File(pdfFilePath!);
+
+      // 🔹 Upload PDF to Firebase Storage
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child("PaymentReceipts")
+          .child(widget.eventId)
+          .child("${widget.userId}.pdf");
+
+      await storageRef.putFile(pdfFile);
+
+      String pdfUrl = await storageRef.getDownloadURL();
+
+      // 🔹 Payment data map
+      Map<String, dynamic> paymentData = {
+        "userId": widget.userId,
+        "userName": widget.userName,
+        "userImage": widget.userImage,
+        "amount": widget.amount,
+        "receiptPdf": pdfUrl,
+        "timestamp": FieldValue.serverTimestamp(),
+      };
+
+      // 🔹 Store under Event/{eventId}/Payments/{userId}
+      await FirebaseFirestore.instance
+          .collection("Event")
+          .doc(widget.eventId)
+          .collection("Payments")
+          .doc(widget.userId)
+          .set(paymentData);
+
+      // 🔹 Mirror under Users/{userId}/Payments/{eventId}
+      await FirebaseFirestore.instance
+          .collection("Users")
+          .doc(widget.userId)
+          .collection("Payments")
+          .doc(widget.eventId)
+          .set({
+        ...paymentData,
+        "eventId": widget.eventId,
+      });
+
+      setState(() => uploading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Receipt uploaded successfully!")),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      setState(() => uploading = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Upload failed: $e")));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+      appBar: AppBar(title: Text("Payment Upload")),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(children: [
-              Image.asset(
-                "images/event.jpg",
-                height: MediaQuery.of(context).size.height / 2,
-                width: MediaQuery.of(context).size.width,
-                fit: BoxFit.cover,
+            Center(
+              child: Image.asset(
+                "images/qrbank.jpg",
+                width: 250,
+                height: 250,
               ),
-              Container(
-                height: MediaQuery.of(context).size.height / 2,
-                width: MediaQuery.of(context).size.width,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(8),
-                        margin: EdgeInsets.only(top: 40.0, left: 20.0),
-                        decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(30)),
-                        child: Icon(
-                          Icons.arrow_back_ios_new_outlined,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: EdgeInsets.only(left: 20.0),
-                      width: MediaQuery.of(context).size.width,
-                      decoration: BoxDecoration(color: Colors.black45),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.name!,
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 25.0,
-                                fontWeight: FontWeight.bold),
-                          ),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_month,
-                                color: Colors.white,
-                              ),
-                              SizedBox(
-                                width: 10.0,
-                              ),
-                              Text(
-                                widget.date,
-                                style: TextStyle(
-                                  color: Color.fromARGB(211, 255, 255, 255),
-                                  fontSize: 19.0,
-                                ),
-                              ),
-                              SizedBox(
-                                width: 20.0,
-                              ),
-                              Icon(
-                                Icons.location_on_outlined,
-                                color: Colors.white,
-                              ),
-                              SizedBox(
-                                width: 10.0,
-                              ),
-                              Text(
-                                widget.location,
-                                style: TextStyle(
-                                  color: Color.fromARGB(211, 255, 255, 255),
-                                  fontSize: 19.0,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(
-                            height: 20.0,
-                          ),
-                        ],
-                      ),
-                    )
-                  ],
+            ),
+
+            SizedBox(height: 20),
+
+            Text(
+              "Amount to Pay: RM ${widget.amount}",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+
+            SizedBox(height: 30),
+
+            ElevatedButton.icon(
+              onPressed: pickPdf,
+              icon: Icon(Icons.picture_as_pdf),
+              label: Text("Upload PDF Receipt"),
+            ),
+
+            if (pdfFilePath != null)
+              Padding(
+                padding: EdgeInsets.only(top: 15),
+                child: Text(
+                  "Selected: ${pdfFilePath!.split('/').last}",
+                  style: TextStyle(color: Colors.green),
                 ),
-              )
-            ]),
-            SizedBox(
-              height: 20.0,
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 20.0),
-              child: Text(
-                "About Event",
-                style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 25.0,
-                    fontWeight: FontWeight.bold),
               ),
-            ),
-            SizedBox(
-              height: 10.0,
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 20.0),
-              child: Text(
-                widget.detail,
-                style: TextStyle(
-                    color: Colors.black87,
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.w500),
-              ),
-            ),
-            SizedBox(
-              height: 20.0,
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 20.0, right: 30.0),
-              child: Row(
-                children: [
-                  Text(
-                    "Number of Tickets",
-                    style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(
-                    width: 40.0,
-                  ),
-                  Container(
-                    width: 50,
-                    decoration: BoxDecoration(
-                        border: Border.all(color: Colors.black54, width: 2.0),
-                        borderRadius: BorderRadius.circular(10)),
-                    child: Column(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            total = total + int.parse(widget.price);
-                            ticket = ticket + 1;
-                            setState(() {});
-                          },
-                          child: Text(
-                            "+",
-                            style:
-                                TextStyle(color: Colors.black, fontSize: 25.0),
-                          ),
-                        ),
-                        Text(
-                          ticket.toString(),
-                          style: TextStyle(
-                              color: Color(0xff6351ec),
-                              fontSize: 25.0,
-                              fontWeight: FontWeight.bold),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            if (ticket > 1) {
-                              total = total - int.parse(widget.price);
-                              ticket = ticket - 1;
-                              setState(() {});
-                            }
-                          },
-                          child: Text(
-                            "-",
-                            style:
-                                TextStyle(color: Colors.black, fontSize: 25.0),
-                          ),
-                        ),
-                      ],
+
+            Spacer(),
+
+            uploading
+                ? CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: uploadPayment,
+                    child: Text(
+                      "Submit Payment",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                  )
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 20.0,
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 20.0, right: 10.0),
-              child: Row(
-                children: [
-                  Text(
-                    "Amount : \$" + total.toString(),
-                    style: TextStyle(
-                        color: Color(0xff6351ec),
-                        fontSize: 23.0,
-                        fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(
-                    width: 20.0,
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      makePayment(total.toString());
-                    },
-                    child: Container(
-                      width: 200,
-                      height: 50,
-                      decoration: BoxDecoration(
-                          color: Color(0xff6351ec),
-                          borderRadius: BorderRadius.circular(10)),
-                      child: Center(
-                        child: Text(
-                          "Book Now",
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 25.0,
-                              fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  )
-                ],
-              ),
-            )
           ],
         ),
       ),
     );
-  }
-
-  Future<void> makePayment(String amount) async {
-    try {
-      paymentIntent = await createPaymentIntent(amount, 'USD');
-      await Stripe.instance
-          .initPaymentSheet(
-              paymentSheetParameters: SetupPaymentSheetParameters(
-                  paymentIntentClientSecret: paymentIntent?['client_secret'],
-                  style: ThemeMode.dark,
-                  merchantDisplayName: 'Adnan'))
-          .then((value) {});
-
-      displayPaymentSheet(amount);
-    } catch (e, s) {
-      print('exception:$e$s');
-    }
-  }
-
-  displayPaymentSheet(String amount) async {
-    try {
-      await Stripe.instance.presentPaymentSheet().then((value) async {
-        Map<String, dynamic> bookingdetail = {
-          "Number": ticket.toString(),
-          "Total": total.toString(),
-          "Event": widget.name,
-          "Location": widget.location,
-          "Date": widget.date,
-          "Name": name,
-          "Image": image,
-          "EventImage": widget.image
-        };
-        await DatabaseMethods()
-            .addUserBooking(bookingdetail, id!)
-            .then((value) async {
-          await DatabaseMethods().addAdminTickets(bookingdetail);
-        });
-        // ignore: use_build_context_synchronously
-        showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                          ),
-                          Text("Payment Successfull")
-                        ],
-                      )
-                    ],
-                  ),
-                ));
-        paymentIntent = null;
-      }).onError((error, stackTrace) {
-        print("Error is :---> $error $stackTrace");
-      });
-    } on StripeException catch (e) {
-      print("Error is:---> $e");
-      showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-                content: Text("Cancelled"),
-              ));
-    } catch (e) {
-      print('$e');
-    }
-  }
-
-  createPaymentIntent(String amount, String currency) async {
-    try {
-      Map<String, dynamic> body = {
-        'amount': calculateAmount(amount),
-        'currency': currency,
-        'payment_method_types[]': 'card'
-      };
-
-      var response = await http.post(
-        Uri.parse('https://api.stripe.com/v1/payment_intents'),
-        headers: {
-          'Authorization': 'Bearer $secretkey',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: body,
-      );
-      return jsonDecode(response.body);
-    } catch (err) {
-      print('err charging user: ${err.toString()}');
-    }
-  }
-
-  calculateAmount(String amount) {
-    final calculatedAmount = (int.parse(amount) * 100);
-
-    return calculatedAmount.toString();
   }
 }
