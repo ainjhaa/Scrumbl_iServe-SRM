@@ -157,7 +157,7 @@ class _ActivityPageState extends State<ActivityPage> {
               child: Column(
                 children: [
                   Container(
-                    margin: EdgeInsets.only(right: 20),
+                    margin: EdgeInsets.only(right: 20, left: 20),
                     width: MediaQuery.of(context).size.width,
                     child: Stack(
                       children: [
