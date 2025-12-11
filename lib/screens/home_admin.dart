@@ -9,11 +9,13 @@ import 'package:demo_app/screens/notification_page.dart';
 import 'package:demo_app/screens/profile_page.dart';
 /*import 'membership_page.dart';
 import '../widgets/membership_card.dart';*/
-import 'package:demo_app/screens/placeholder_page.dart';
+//import 'package:demo_app/screens/placeholder_page.dart';
 import 'package:demo_app/screens/admin/user_management.dart';
 import 'package:demo_app/widgets/nav_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:demo_app/screens/admin/report_page.dart';
+import 'package:demo_app/screens/admin/news_list_page.dart';
+import 'package:demo_app/screens/admin/admin_news_editor_page.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -207,22 +209,24 @@ class _AdminState extends State<AdminPage> {
             const SizedBox(height: 30),
 
             InfoSection(
-              title: "What's Up News !",
+              title: "What's Up News!",
               linkLabel: "See More",
               onLinkTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const PlaceholderPage("Announcements")));
-              },
-              items: const [
-                {"title": "New Committee Intake", "image": "assets/news1.jpg"},
-              ],
-              cardWidth: 350,   // 🔧 You can tweak width
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => NewsListPage(),
+                ),
+              );
+            },
+
+              /*cardWidth: 350,
               cardHeight: 230,
-              imageHeight: 180,
-              //imageBorderRadius: 15,
+              imageHeight: 180,*/
+              items: [], // Items will come from Firestore inside InfoSection
             ),
+            
+
 
             const SizedBox(height: 30),
           ],

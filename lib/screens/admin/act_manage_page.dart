@@ -158,6 +158,7 @@ class _ActivityPageState extends State<ActivityPage> {
               child: Column(
                 children: [
                   Container(
+                    
                     width: MediaQuery.of(context).size.width,
                     child: Stack(
                       children: [
