@@ -307,7 +307,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
       // 🔹 Mirror under Users/{userId}/Payments/{eventId}
       await FirebaseFirestore.instance
-          .collection("Users")
+          .collection("users")
           .doc(widget.userId)
           .collection("Payments")
           .doc(widget.eventId)
