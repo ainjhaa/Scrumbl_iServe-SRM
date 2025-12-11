@@ -4,19 +4,24 @@ import 'badge_event_list_page.dart';
 
 class BadgePage extends StatelessWidget {
   final List<String> badgeImages = [
-  "assets/rakan_niaga.png",
-  "assets/rakan_prihatin.png",
-  "assets/rakan_bumi.png",
-  "assets/rakan_demokrasi.png",
-  "assets/rakan_aktif.png",
-  "assets/rakan_muzik.png",       // repeat or add new
-  "assets/rakan_mahir.png",
-  "assets/rakan_litar.png",
-  "assets/rakan_ekspresi.png",
-  "assets/rakan_digital.png",
-];
+    "assets/rakan_niaga.png",
+    "assets/rakan_prihatin.png",
+    "assets/rakan_bumi.png",
+    "assets/rakan_demokrasi.png",
+    "assets/rakan_aktif.png",
+    "assets/rakan_muzik.png",       
+    "assets/rakan_mahir.png",
+    "assets/rakan_litar.png",
+    "assets/rakan_ekspresi.png",
+    "assets/rakan_digital.png",
+  ];
 
-  
+  final List<String> categories = [
+    "Rakan Niaga", "Rakan Prihatin", "Rakan Bumi", "Rakan Demokrasi", 
+    "Rakan Aktif", "Rakan Muzik", "Rakan Litar", 
+     "Rakan Ekspresi", "Rakan Mahir", "Rakan Digital"
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -105,13 +110,17 @@ class BadgePage extends StatelessWidget {
   }
 
   /// Count how many events belong to this badge.
-  /// You can change the rule as needed.
-  Future<int> _countEvents(int badgeIndex) async {
-    QuerySnapshot snap = await FirebaseFirestore.instance
-        .collection("Event")
-        .get();
+  /// Count how many events belong to this badge/category.
+Future<int> _countEvents(int badgeIndex) async {
+  // Map index to category
+  String category = categories[badgeIndex - 1]; // assuming badgeIndex starts at 1
 
-    // example rule: count all events (you may customise)
-    return snap.docs.length;
-  }
+  QuerySnapshot snap = await FirebaseFirestore.instance
+      .collection("Event")
+      .where("Category", isEqualTo: category)
+      .get();
+
+  return snap.docs.length;
+}
+
 }

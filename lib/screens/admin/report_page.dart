@@ -157,7 +157,7 @@ class UserReport extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder(
       stream: FirebaseFirestore.instance
-          .collection("Users")
+          .collection("users")
           .orderBy("badges", descending: true)
           .snapshots(),
       builder: (context, snapshot) {

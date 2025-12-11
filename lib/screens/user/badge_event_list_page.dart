@@ -4,19 +4,27 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class BadgeEventListPage extends StatelessWidget {
   final int badgeIndex;
 
-  const BadgeEventListPage({super.key, required this.badgeIndex});
+  final List<String> Category = [
+    "Rakan Niaga", "Rakan Prihatin", "Rakan Bumi", "Rakan Demokrasi", 
+    "Rakan Aktif", "Rakan Muzik", "Rakan Litar", 
+     "Rakan Ekspresi", "Rakan Mahir", "Rakan Digital"
+  ];
+
+  BadgeEventListPage({super.key, required this.badgeIndex});
 
   @override
   Widget build(BuildContext context) {
+    // Map badgeIndex to category string
+    final String category = Category[badgeIndex - 1];
+
     return Scaffold(
       appBar: AppBar(
-        title: Text("Badge $badgeIndex - Events"),
+        title: Text("Events for $category"),
       ),
       body: StreamBuilder(
         stream: FirebaseFirestore.instance
             .collection("Event")
-            // You can filter events by type/category based on badgeIndex
-            //.where("badgeCategory", isEqualTo: badgeIndex)
+            .where("Category", isEqualTo: category) // filter events by category
             .snapshots(),
         builder: (context, AsyncSnapshot snapshot) {
           if (!snapshot.hasData) {
@@ -30,7 +38,7 @@ class BadgeEventListPage extends StatelessWidget {
               child: Text("No events for this badge yet."),
             );
           }
-          
+
           return ListView.builder(
             itemCount: docs.length,
             itemBuilder: (context, index) {
@@ -41,9 +49,8 @@ class BadgeEventListPage extends StatelessWidget {
                 elevation: 3,
                 child: ListTile(
                   title: Text(data["Name"]),
-                  subtitle: Text(
-                      "${data["Date"]} | ${data["Location"]}"),
-                  trailing: const Icon(Icons.arrow_forward_ios),
+                  subtitle: Text("${data["Date"]} | ${data["Location"]}"),
+                  /*trailing: const Icon(Icons.arrow_forward_ios),
                   onTap: () {
                     // Navigate to your existing event detail page
                     Navigator.pushNamed(
@@ -51,13 +58,14 @@ class BadgeEventListPage extends StatelessWidget {
                       "/eventDetail",
                       arguments: data.id,
                     );
-                  },
+                  },*/
                 ),
               );
             },
           );
         },
       ),
+
     );
   }
 }

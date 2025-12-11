@@ -90,16 +90,21 @@ class _EDetailPageState extends State<EDetailPage> {
                     child: Column( 
                         mainAxisAlignment: MainAxisAlignment.spaceBetween, 
                         children: [ 
-                          GestureDetector( 
-                            onTap: () => Navigator.pop(context), 
-                            child: 
-                              Container( 
-                                padding: EdgeInsets.all(8), 
-                                margin: EdgeInsets.only(top: 40.0, left: 20.0), 
-                                decoration: BoxDecoration( color: Colors.white, borderRadius: BorderRadius.circular(30), ), 
-                                child: Icon(Icons.arrow_back_ios_new_outlined), 
-                              ), 
-                          ), 
+                          Align(
+                            alignment: Alignment.topLeft,
+                            child: GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                padding: EdgeInsets.all(8),
+                                margin: EdgeInsets.only(top: 40.0, left: 20.0),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: Icon(Icons.arrow_back_ios_new_outlined),
+                              ),
+                            ),
+                          ),
                           Container( 
                             width: double.infinity, padding: EdgeInsets.all(20), color: Colors.black54, 
                             child: Column( 
@@ -107,14 +112,17 @@ class _EDetailPageState extends State<EDetailPage> {
                               children: [ 
                                 Text(name, style: TextStyle( color: Colors.white, fontSize: 25, fontWeight: FontWeight.bold)), 
                                 Row( children: [ 
-                                  Icon(Icons.calendar_month, color: Colors.white), 
-                                  SizedBox(width: 10), 
+                                  Icon(Icons.calendar_month, color: Colors.white),  
+                                  SizedBox(width: 5),                                 
                                   Text(date, style: TextStyle( color: Colors.white, fontSize: 18)), 
-                                  SizedBox(width: 20), 
-                                  Icon(Icons.location_on_outlined, color: Colors.white), 
                                   SizedBox(width: 10), 
-                                  Text(location, style: TextStyle( color: Colors.white, fontSize: 18)), 
-                                ], ) 
+                                  Icon(Icons.location_on_outlined, color: Colors.white),   
+                                  SizedBox(width: 5),                                 
+                                  Expanded( child:
+                                    Text(location, style: TextStyle(color: Colors.white, fontSize: 18),
+                                    softWrap: true, maxLines: 2, // wrap into maximum 2 lines
+                                    overflow: TextOverflow.ellipsis) ) // show "..." if too long), 
+                            ], ) 
                               ], 
                             ), 
                           ) 
@@ -131,7 +139,7 @@ class _EDetailPageState extends State<EDetailPage> {
                 SizedBox(height: 10), 
 
                 Padding( padding: EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(detail, style: TextStyle( fontSize: 17, fontWeight: FontWeight.w500)), 
+                  child: Text(detail, style: TextStyle( fontSize: 17)), 
                 ), 
 
                 SizedBox(height: 20), 
