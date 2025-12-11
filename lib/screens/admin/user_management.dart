@@ -13,6 +13,19 @@ class _UserManagementPageState extends State<UserManagementPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  // Color for roles
   Color getStatusColor(String role) {
     switch (role.toLowerCase()) {
       case "admin":
@@ -28,16 +41,10 @@ class _UserManagementPageState extends State<UserManagementPage>
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  // Capitalize first letter
+  String capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1).toLowerCase();
   }
 
   @override
@@ -95,11 +102,12 @@ class _UserManagementPageState extends State<UserManagementPage>
                         builder: (context, memSnapshot) {
                           String memStatus = "Not Applied";
 
-                          // If user is already a Member, override memStatus
                           if (role.toLowerCase() == "member") {
                             memStatus = "Applied";
-                          } else if (memSnapshot.hasData && memSnapshot.data!.exists) {
-                            final data = memSnapshot.data!.data() as Map<String, dynamic>;
+                          } else if (memSnapshot.hasData &&
+                              memSnapshot.data!.exists) {
+                            final data =
+                                memSnapshot.data!.data() as Map<String, dynamic>;
                             memStatus = data['status'] ?? "Pending";
                           }
 
@@ -107,10 +115,9 @@ class _UserManagementPageState extends State<UserManagementPage>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text("Role: $role"),
-                              // Membership status on new line for volunteers & members
                               if (role.toLowerCase() == "volunteer" ||
                                   role.toLowerCase() == "member")
-                                Text("Membership Status: $memStatus",
+                                Text("Membership Status: ${capitalize(memStatus)}",
                                     style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: Colors.deepPurple)),
@@ -164,7 +171,7 @@ class _UserManagementPageState extends State<UserManagementPage>
                   final data = app.data() as Map<String, dynamic>;
                   final name = data['name'] ?? '';
                   final email = data['email'] ?? '';
-                  final status = data['status'] ?? 'pending';
+                  final status = capitalize(data['status'] ?? 'Pending');
                   final fileName = data['fileName'] ?? '';
                   final fileUrl = data['fileUrl'] ?? '';
 
@@ -202,7 +209,6 @@ class _UserManagementPageState extends State<UserManagementPage>
                                 IconButton(
                                   icon: const Icon(Icons.check, color: Colors.green),
                                   onPressed: () async {
-                                    // Approve → update user role to Member
                                     await FirebaseFirestore.instance
                                         .collection('users')
                                         .doc(app.id)
@@ -220,7 +226,6 @@ class _UserManagementPageState extends State<UserManagementPage>
                                 IconButton(
                                   icon: const Icon(Icons.close, color: Colors.red),
                                   onPressed: () async {
-                                    // Reject → keep role as Volunteer
                                     await FirebaseFirestore.instance
                                         .collection('users')
                                         .doc(app.id)
@@ -228,11 +233,11 @@ class _UserManagementPageState extends State<UserManagementPage>
                                     await FirebaseFirestore.instance
                                         .collection('membership_requests')
                                         .doc(app.id)
-                                        .update({'status': 'rejected'});
+                                        .update({'status': 'Rejected'});
                                     await FirebaseFirestore.instance
                                         .collection('registrations')
                                         .doc(app.id)
-                                        .update({'status': 'rejected'});
+                                        .update({'status': 'Rejected'});
                                   },
                                 ),
                               ],
@@ -250,9 +255,7 @@ class _UserManagementPageState extends State<UserManagementPage>
   }
 }
 
-// ---------------------------------------------------------
-// USER DETAILS PAGE
-// ---------------------------------------------------------
+// -------------------- USER DETAILS PAGE --------------------
 class UserDetailsPage extends StatefulWidget {
   final String userId;
 
@@ -263,6 +266,11 @@ class UserDetailsPage extends StatefulWidget {
 }
 
 class _UserDetailsPageState extends State<UserDetailsPage> {
+  String capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1).toLowerCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -271,9 +279,7 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
         stream:
             FirebaseFirestore.instance.collection("users").doc(widget.userId).snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
           final data = snapshot.data!;
           String currentStatus = data['role'];
@@ -290,9 +296,11 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
 
               if (memSnapshot.hasData && memSnapshot.data!.exists) {
                 final memData = memSnapshot.data!.data() as Map<String, dynamic>;
-                memStatus = memData['status'] ?? "Pending";
+                memStatus = capitalize(memData['status'] ?? "Pending");
                 fileName = memData['fileName'] ?? "";
                 fileUrl = memData['fileUrl'] ?? "";
+              } else if (currentStatus.toLowerCase() == "member") {
+                memStatus = "Applied";
               }
 
               return Padding(
@@ -306,8 +314,6 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
                     const SizedBox(height: 10),
                     Text("Role: $currentStatus", style: const TextStyle(fontSize: 18)),
                     const SizedBox(height: 10),
-
-                    // Membership status for volunteer & member
                     if (currentStatus.toLowerCase() == "volunteer" ||
                         currentStatus.toLowerCase() == "member")
                       Text("Membership Status: $memStatus",
@@ -316,7 +322,6 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
                               fontWeight: FontWeight.bold,
                               color: Colors.deepPurple)),
                     const SizedBox(height: 10),
-
                     if (fileName.isNotEmpty && currentStatus.toLowerCase() == "volunteer")
                       InkWell(
                         onTap: () async {
@@ -376,11 +381,11 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
                               await FirebaseFirestore.instance
                                   .collection('membership_requests')
                                   .doc(widget.userId)
-                                  .update({'status': 'rejected'});
+                                  .update({'status': 'Rejected'});
                               await FirebaseFirestore.instance
                                   .collection('registrations')
                                   .doc(widget.userId)
-                                  .update({'status': 'rejected'});
+                                  .update({'status': 'Rejected'});
                               setState(() {});
                             },
                             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),

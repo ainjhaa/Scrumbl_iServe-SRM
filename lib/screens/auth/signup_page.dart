@@ -35,7 +35,7 @@ class _SignUpPageState extends State<SignUpPage> {
           .doc(user.uid)
           .set({
         'email': email.text,
-        'role': 'User', // or Admin
+        'role': 'Volunteer', // or Admin
       });
     }
 
