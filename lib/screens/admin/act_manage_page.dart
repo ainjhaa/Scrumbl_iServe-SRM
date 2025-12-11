@@ -82,6 +82,7 @@ class _ActivityPageState extends State<ActivityPage> {
               ),
 
               _allEventsWidget(),
+              SizedBox(height: 20),
             ],
           ),
         ),
@@ -128,7 +129,7 @@ class _ActivityPageState extends State<ActivityPage> {
         final docs = snapshot.data.docs;
 
         return ListView.builder(
-          padding: EdgeInsets.zero,
+          padding: EdgeInsets.symmetric(horizontal: 20),
           physics: NeverScrollableScrollPhysics(), // allow outside scroll
           shrinkWrap: true,
           itemCount: docs.length,
@@ -157,7 +158,6 @@ class _ActivityPageState extends State<ActivityPage> {
               child: Column(
                 children: [
                   Container(
-                    margin: EdgeInsets.only(right: 20, left: 20),
                     width: MediaQuery.of(context).size.width,
                     child: Stack(
                       children: [
@@ -187,7 +187,7 @@ class _ActivityPageState extends State<ActivityPage> {
                           child: Text(
                             formattedDate,
                             style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+                                fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         )
                       ],
@@ -197,7 +197,7 @@ class _ActivityPageState extends State<ActivityPage> {
                   SizedBox(height: 5),
 
                   // Event Title + Price
-                  Row(
+                  Row(           
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
@@ -214,7 +214,7 @@ class _ActivityPageState extends State<ActivityPage> {
                       Text(
                         ds["Location"],
                         style: TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.w500),
+                            fontSize: 20, fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
