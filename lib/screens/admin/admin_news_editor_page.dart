@@ -15,9 +15,14 @@ class _AdminNewsPageState extends State<AdminNewsPage> {
   final TextEditingController titleCtrl = TextEditingController();
   final TextEditingController descCtrl = TextEditingController(); // FIXED: description controller
   final TextEditingController tagsCtrl = TextEditingController();
+  final TextEditingController locationCtrl = TextEditingController();
+  String selectedTag = "Announcement";   // default dropdown selection
+
 
   File? selectedImage;
   bool isUploading = false;
+
+
 
   Future pickImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -45,21 +50,22 @@ class _AdminNewsPageState extends State<AdminNewsPage> {
     setState(() => isUploading = true);
 
     try {
-      // Upload Image
       String imageUrl = await uploadImage(selectedImage!);
 
-      // Save news to Firestore
       await FirebaseFirestore.instance.collection("news").add({
         "title": titleCtrl.text,
         "image": imageUrl,
         "description": descCtrl.text,
         "timestamp": FieldValue.serverTimestamp(),
+        "tag": selectedTag,               
+        "location": locationCtrl.text,    // (optional)
       });
 
-      // Clear fields
       titleCtrl.clear();
       descCtrl.clear();
+      locationCtrl.clear();
       selectedImage = null;
+
       setState(() {});
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -110,6 +116,35 @@ class _AdminNewsPageState extends State<AdminNewsPage> {
 
                 const SizedBox(height: 10),
 
+                // TAG DROPDOWN
+                DropdownButtonFormField<String>(
+                  value: selectedTag,
+                  decoration: const InputDecoration(labelText: "News Category Tag"),
+                  items: const [
+                    DropdownMenuItem(value: "Announcement", child: Text("Announcement")),
+                    DropdownMenuItem(value: "Event", child: Text("Event")),
+                    DropdownMenuItem(value: "Collaboration", child: Text("Collaboration")),
+                    DropdownMenuItem(value: "Achievement", child: Text("Achievement")),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      selectedTag = value!;
+                    });
+                  },
+                ),
+
+                const SizedBox(height: 10),
+
+                // LOCATION (OPTIONAL)
+                TextField(
+                  controller: locationCtrl,
+                  decoration: const InputDecoration(
+                    labelText: "Location (optional)",
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
                 GestureDetector(
                   onTap: pickImage,
                   child: Container(
@@ -139,7 +174,7 @@ class _AdminNewsPageState extends State<AdminNewsPage> {
             ),
           ),
 
-          const Divider(),
+          /*const Divider(),
 
           // ---------------------------
           // Display Existing News
@@ -188,7 +223,7 @@ class _AdminNewsPageState extends State<AdminNewsPage> {
                 );
               },
             ),
-          ),
+          ),*/
         ],
       ),
     );

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart'; //  For date formatting
-import 'admin_news_editor_page.dart' ; 
+import 'package:demo_app/screens/admin/admin_news_editor_page.dart';
+import 'package:demo_app/screens/admin/news_detail_page.dart'; 
 
 class NewsListPage extends StatelessWidget {
   const NewsListPage({super.key});
@@ -13,7 +14,7 @@ class NewsListPage extends StatelessWidget {
     String day = DateFormat('EEEE').format(date); // Monday, Tuesday...
     String dateNum = DateFormat('dd MMM yyyy').format(date);
 
-    return "$day • $dateNum";
+    return "$day, $dateNum";
   }
 
   @override
@@ -72,6 +73,17 @@ class NewsListPage extends StatelessWidget {
                 child: InkWell(
                   onTap: () {
                     // TODO: Navigate to NewsDetailPage
+                     Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => NewsDetailPage(
+                          news: {
+                            "id": news.id,        // needed for deletion
+                            ...news.data(),
+                          },
+                        ),
+                      ),
+                    );
                   },
 
                   child: Column(
@@ -85,7 +97,7 @@ class NewsListPage extends StatelessWidget {
                         child: Image.network(
                           news["image"],
                           width: double.infinity,
-                          height: 200,
+                          height: 160,
                           fit: BoxFit.cover,
                         ),
                       ),

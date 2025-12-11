@@ -14,8 +14,7 @@ import 'package:demo_app/screens/admin/user_management.dart';
 import 'package:demo_app/widgets/nav_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:demo_app/screens/admin/report_page.dart';
-import 'package:demo_app/screens/admin/news_list_page.dart';
-import 'package:demo_app/screens/admin/admin_news_editor_page.dart';
+import 'package:demo_app/widgets/news_carousel.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -208,27 +207,9 @@ class _AdminState extends State<AdminPage> {
 
             const SizedBox(height: 30),
 
-            InfoSection(
-              title: "What's Up News!",
-              linkLabel: "See More",
-              onLinkTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => NewsListPage(),
-                ),
-              );
-            },
+            NewsCarouselSection(title: "What's Up News!"),
 
-              /*cardWidth: 350,
-              cardHeight: 230,
-              imageHeight: 180,*/
-              items: [], // Items will come from Firestore inside InfoSection
-            ),
-            
-
-
-            const SizedBox(height: 30),
+            const SizedBox(height: 50),
           ],
         ),
 
