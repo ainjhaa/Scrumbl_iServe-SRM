@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class UserManagementPage extends StatelessWidget {
-  UserManagementPage({super.key});
+class UserManagementPage extends StatefulWidget {
+  const UserManagementPage({super.key});
 
+  @override
+  State<UserManagementPage> createState() => _UserManagementPageState();
+}
+
+class _UserManagementPageState extends State<UserManagementPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
 
   Color getStatusColor(String role) {
     switch (role.toLowerCase()) {
@@ -13,9 +21,23 @@ class UserManagementPage extends StatelessWidget {
         return Colors.blue;
       case "volunteer":
         return Colors.green;
+      case "member":
+        return Colors.amber;
       default:
         return Colors.grey;
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -23,57 +45,206 @@ class UserManagementPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("User Management"),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: "Users"),
+            Tab(text: "Membership Applications"),
+          ],
+        ),
       ),
-      // 🔥 Real-time user list from Firestore
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('users').snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // -------------------- USERS TAB --------------------
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance.collection('users').snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No users found."));
-          }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text("No users found."));
+              }
 
-          final users = snapshot.data!.docs;
+              final users = snapshot.data!.docs;
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: users.length,
-            itemBuilder: (context, index) {
-              final user = users[index];
-              final name = user['name'];
-              final status = user['role'];
+              return ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: users.length,
+                itemBuilder: (context, index) {
+                  final user = users[index];
+                  final name = user['name'];
+                  final role = user['role'];
 
-              return Card(
-                elevation: 3,
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                child: ListTile(
-                  leading: const Icon(Icons.person, size: 40),
-                  title: Text(name,
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                  subtitle: Text("Status: $status"),
-                  trailing: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => UserDetailsPage(userId: user.id),
+                  return Card(
+                    elevation: 3,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    child: ListTile(
+                      leading:
+                          Icon(Icons.person, size: 40, color: getStatusColor(role)),
+                      title: Text(name,
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      subtitle: StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('membership_requests')
+                            .doc(user.id)
+                            .snapshots(),
+                        builder: (context, memSnapshot) {
+                          String memStatus = "Not Applied";
+
+                          // If user is already a Member, override memStatus
+                          if (role.toLowerCase() == "member") {
+                            memStatus = "Applied";
+                          } else if (memSnapshot.hasData && memSnapshot.data!.exists) {
+                            final data = memSnapshot.data!.data() as Map<String, dynamic>;
+                            memStatus = data['status'] ?? "Pending";
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Role: $role"),
+                              // Membership status on new line for volunteers & members
+                              if (role.toLowerCase() == "volunteer" ||
+                                  role.toLowerCase() == "member")
+                                Text("Membership Status: $memStatus",
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.deepPurple)),
+                            ],
+                          );
+                        },
+                      ),
+                      trailing: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => UserDetailsPage(userId: user.id),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
                         ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                        child: const Text("View"),
+                      ),
                     ),
-                    child: const Text("View"),
-                  ),
-                ),
+                  );
+                },
               );
             },
-          );
-        },
+          ),
+
+          // -------------------- MEMBERSHIP APPLICATIONS TAB --------------------
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('membership_requests')
+                .orderBy('uploadedAt', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text("No membership applications."));
+              }
+
+              final applications = snapshot.data!.docs;
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: applications.length,
+                itemBuilder: (context, index) {
+                  final app = applications[index];
+                  final data = app.data() as Map<String, dynamic>;
+                  final name = data['name'] ?? '';
+                  final email = data['email'] ?? '';
+                  final status = data['status'] ?? 'pending';
+                  final fileName = data['fileName'] ?? '';
+                  final fileUrl = data['fileUrl'] ?? '';
+
+                  return Card(
+                    elevation: 3,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    child: ListTile(
+                      title: Text(name,
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Email: $email'),
+                          Text('Status: $status'),
+                          if (fileName.isNotEmpty)
+                            InkWell(
+                              onTap: () async {
+                                Uri uri = Uri.parse(fileUrl);
+                                if (await canLaunchUrl(uri)) await launchUrl(uri);
+                              },
+                              child: Text(
+                                'View File: $fileName',
+                                style: const TextStyle(
+                                    color: Colors.blue,
+                                    decoration: TextDecoration.underline),
+                              ),
+                            ),
+                        ],
+                      ),
+                      trailing: status.toLowerCase() == 'pending'
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.check, color: Colors.green),
+                                  onPressed: () async {
+                                    // Approve → update user role to Member
+                                    await FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(app.id)
+                                        .update({'role': 'Member'});
+                                    await FirebaseFirestore.instance
+                                        .collection('membership_requests')
+                                        .doc(app.id)
+                                        .update({'status': 'Approved'});
+                                    await FirebaseFirestore.instance
+                                        .collection('registrations')
+                                        .doc(app.id)
+                                        .update({'status': 'Approved'});
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close, color: Colors.red),
+                                  onPressed: () async {
+                                    // Reject → keep role as Volunteer
+                                    await FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(app.id)
+                                        .update({'role': 'Volunteer'});
+                                    await FirebaseFirestore.instance
+                                        .collection('membership_requests')
+                                        .doc(app.id)
+                                        .update({'status': 'rejected'});
+                                    await FirebaseFirestore.instance
+                                        .collection('registrations')
+                                        .doc(app.id)
+                                        .update({'status': 'rejected'});
+                                  },
+                                ),
+                              ],
+                            )
+                          : null,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -96,11 +267,9 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("User Details")),
-      body: StreamBuilder(
-        stream: FirebaseFirestore.instance
-            .collection("users")
-            .doc(widget.userId)
-            .snapshots(),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream:
+            FirebaseFirestore.instance.collection("users").doc(widget.userId).snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
@@ -109,37 +278,126 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
           final data = snapshot.data!;
           String currentStatus = data['role'];
 
-          return Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Name: ${data['name']}", style: const TextStyle(fontSize: 18)),
-                const SizedBox(height: 10),
-                Text("Email: ${data['email']}", style: const TextStyle(fontSize: 18)),
-                const SizedBox(height: 10),
-                Text("Status: $currentStatus", style: const TextStyle(fontSize: 18)),
-                const SizedBox(height: 20),
+          return StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('membership_requests')
+                .doc(widget.userId)
+                .snapshots(),
+            builder: (context, memSnapshot) {
+              String memStatus = "Not Applied";
+              String fileName = "";
+              String fileUrl = "";
 
-                /// 🔄 CHANGE STATUS BUTTON
-                ElevatedButton(
-                  onPressed: () => _showChangeStatusDialog(
-                    userId: widget.userId,
-                    currentStatus: currentStatus,
-                  ),
-                  child: const Text("Change Status"),
+              if (memSnapshot.hasData && memSnapshot.data!.exists) {
+                final memData = memSnapshot.data!.data() as Map<String, dynamic>;
+                memStatus = memData['status'] ?? "Pending";
+                fileName = memData['fileName'] ?? "";
+                fileUrl = memData['fileUrl'] ?? "";
+              }
+
+              return Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Name: ${data['name']}", style: const TextStyle(fontSize: 18)),
+                    const SizedBox(height: 10),
+                    Text("Email: ${data['email']}", style: const TextStyle(fontSize: 18)),
+                    const SizedBox(height: 10),
+                    Text("Role: $currentStatus", style: const TextStyle(fontSize: 18)),
+                    const SizedBox(height: 10),
+
+                    // Membership status for volunteer & member
+                    if (currentStatus.toLowerCase() == "volunteer" ||
+                        currentStatus.toLowerCase() == "member")
+                      Text("Membership Status: $memStatus",
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.deepPurple)),
+                    const SizedBox(height: 10),
+
+                    if (fileName.isNotEmpty && currentStatus.toLowerCase() == "volunteer")
+                      InkWell(
+                        onTap: () async {
+                          Uri uri = Uri.parse(fileUrl);
+                          if (await canLaunchUrl(uri)) await launchUrl(uri);
+                        },
+                        child: Text(
+                          "Uploaded File: $fileName",
+                          style: const TextStyle(
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline),
+                        ),
+                      ),
+                    const SizedBox(height: 20),
+
+                    // Change role button
+                    ElevatedButton(
+                      onPressed: () => _showChangeStatusDialog(
+                        userId: widget.userId,
+                        currentStatus: currentStatus,
+                      ),
+                      child: const Text("Change Role"),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Approve/Reject buttons for volunteers with pending membership
+                    if (currentStatus.toLowerCase() == "volunteer" &&
+                        memStatus.toLowerCase() == "pending")
+                      Row(
+                        children: [
+                          ElevatedButton(
+                            onPressed: () async {
+                              await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(widget.userId)
+                                  .update({'role': 'Member'});
+                              await FirebaseFirestore.instance
+                                  .collection('membership_requests')
+                                  .doc(widget.userId)
+                                  .update({'status': 'Approved'});
+                              await FirebaseFirestore.instance
+                                  .collection('registrations')
+                                  .doc(widget.userId)
+                                  .update({'status': 'Approved'});
+                              setState(() {});
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                            child: const Text("Approve"),
+                          ),
+                          const SizedBox(width: 20),
+                          ElevatedButton(
+                            onPressed: () async {
+                              await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(widget.userId)
+                                  .update({'role': 'Volunteer'});
+                              await FirebaseFirestore.instance
+                                  .collection('membership_requests')
+                                  .doc(widget.userId)
+                                  .update({'status': 'rejected'});
+                              await FirebaseFirestore.instance
+                                  .collection('registrations')
+                                  .doc(widget.userId)
+                                  .update({'status': 'rejected'});
+                              setState(() {});
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                            child: const Text("Reject"),
+                          ),
+                        ],
+                      ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
     );
   }
 
-  // ----------------------------------------------
-  // 🔄 Dialog + Firebase Update Function
-  // ----------------------------------------------
   void _showChangeStatusDialog({
     required String userId,
     required String currentStatus,
@@ -162,28 +420,21 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
           },
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
           ElevatedButton(
             onPressed: () async {
               if (selectedStatus == null) return;
-
-              // 🔥 Update role in Firebase
               await FirebaseFirestore.instance
                   .collection("users")
                   .doc(userId)
                   .update({"role": selectedStatus});
-
               Navigator.pop(context);
-
-              // 🔄 This will refresh the UI
               setState(() {});
-
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Status updated successfully"),
-                                        backgroundColor: Colors.green),
+                const SnackBar(
+                  content: Text("Role updated successfully"),
+                  backgroundColor: Colors.green,
+                ),
               );
             },
             child: const Text("Confirm"),

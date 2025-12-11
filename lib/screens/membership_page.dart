@@ -4,78 +4,25 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import '../widgets/ai_chat_popup.dart';
-import '../widgets/info_section.dart';
-import 'notification_page.dart';
-import 'profile_page.dart';
-import 'membership_page.dart';
-import 'placeholder_page.dart';
-import '../widgets/membership_card.dart';
-import '../widgets/nav_button.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'user/list_events_page.dart';
-import 'register_member.dart';
 
 class MembershipPage extends StatefulWidget {
   const MembershipPage({super.key});
 
   @override
-  State<MembershipPage> createState() => _MembershipPage();
+  State<MembershipPage> createState() => _MembershipPageState();
 }
 
-class _MembershipPage extends State<MembershipPage> {
-  //const _MembershipPage({super.key});
-
-  Stream<DocumentSnapshot> getMembershipStatus() {
-    final user = FirebaseAuth.instance.currentUser!;
-    return FirebaseFirestore.instance.collection('registrations').doc(user.uid).snapshots();
-  }
-
+class _MembershipPageState extends State<MembershipPage> {
   PlatformFile? pickedFile;
   UploadTask? uploadTask;
 
-  Future uploadFile() async {
-    if (pickedFile == null) return;
-
+  Stream<DocumentSnapshot> getMembershipStatus() {
     final user = FirebaseAuth.instance.currentUser!;
-    final file = File(pickedFile!.path!);
-
-    final path = 'registrations/${user.uid}/${pickedFile!.name}';
-    final ref = FirebaseStorage.instance.ref().child(path);
-
-    setState(() {
-      uploadTask = ref.putFile(file);
-    });
-
-    final snapshot = await uploadTask!.whenComplete(() {});
-    final urlDownload = await snapshot.ref.getDownloadURL();
-
-    // Save metadata to Firestore
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-
-    String name = userDoc['name'];   // READ NAME FROM USERS COLLECTION
-
-    await FirebaseFirestore.instance
-      .collection('registrations')
-      .doc(user.uid)
-      .set({
-      'uid': user.uid,
-      'email': user.email,
-      'name': name,     // <<< ADD THIS
-      'fileName': pickedFile!.name,
-      'fileUrl': urlDownload,
-      'uploadedAt': FieldValue.serverTimestamp(),
-      'status': 'pending',
-      });
-
-
-    setState(() => uploadTask = null);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("File uploaded successfully!")),
-    );
-
-    print('Download Link: $urlDownload');
+    // Listen to the volunteer’s registration doc (status updated by admin)
+    return FirebaseFirestore.instance
+        .collection('registrations')
+        .doc(user.uid)
+        .snapshots();
   }
 
   Future selectFile() async {
@@ -87,7 +34,56 @@ class _MembershipPage extends State<MembershipPage> {
     });
   }
 
-  @override
+  Future uploadFile() async {
+    if (pickedFile == null) return;
+
+    final user = FirebaseAuth.instance.currentUser!;
+    final file = File(pickedFile!.path!);
+    final path = 'registrations/${user.uid}/${pickedFile!.name}';
+    final ref = FirebaseStorage.instance.ref().child(path);
+
+    setState(() {
+      uploadTask = ref.putFile(file);
+    });
+
+    final snapshot = await uploadTask!.whenComplete(() {});
+    final urlDownload = await snapshot.ref.getDownloadURL();
+
+    final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    String name = userDoc['name'];
+
+    final registrationData = {
+      'uid': user.uid,
+      'email': user.email,
+      'name': name,
+      'fileName': pickedFile!.name,
+      'fileUrl': urlDownload,
+      'uploadedAt': FieldValue.serverTimestamp(),
+      'status': 'pending',
+    };
+
+    // Save to volunteer's collection
+    await FirebaseFirestore.instance
+        .collection('registrations')
+        .doc(user.uid)
+        .set(registrationData);
+
+    // Save to admin collection for approval
+    await FirebaseFirestore.instance
+        .collection('membership_requests')
+        .doc(user.uid)
+        .set(registrationData);
+
+    setState(() => uploadTask = null);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("File uploaded successfully!")),
+    );
+
+    print('Download Link: $urlDownload');
+  }
+
   Widget buildUploadSection() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -106,7 +102,6 @@ class _MembershipPage extends State<MembershipPage> {
             style: TextStyle(fontSize: 16, color: Colors.grey),
           ),
           const SizedBox(height: 20),
-
           if (pickedFile != null)
             Container(
               height: 150,
@@ -114,19 +109,16 @@ class _MembershipPage extends State<MembershipPage> {
               color: Colors.blue[100],
               child: Center(child: Text(pickedFile!.name)),
             ),
-
           const SizedBox(height: 32),
           ElevatedButton(
             child: const Text('Select File'),
             onPressed: selectFile,
           ),
           const SizedBox(height: 32),
-
           ElevatedButton(
             child: const Text('Upload File'),
             onPressed: uploadFile,
           ),
-
           const SizedBox(height: 32),
           buildProgress(),
         ],
@@ -183,7 +175,17 @@ class _MembershipPage extends State<MembershipPage> {
           ElevatedButton(
             onPressed: () {
               // allow re-apply
-              FirebaseFirestore.instance.collection('membership_requests').doc(FirebaseAuth.instance.currentUser!.uid).delete();
+              FirebaseFirestore.instance
+                  .collection('membership_requests')
+                  .doc(FirebaseAuth.instance.currentUser!.uid)
+                  .delete();
+              FirebaseFirestore.instance
+                  .collection('registrations')
+                  .doc(FirebaseAuth.instance.currentUser!.uid)
+                  .delete();
+              setState(() {
+                pickedFile = null;
+              });
             },
             child: const Text("Reapply"),
           )
@@ -223,36 +225,36 @@ class _MembershipPage extends State<MembershipPage> {
         }
       });
 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Membership Program")),
       body: StreamBuilder<DocumentSnapshot>(
-  stream: getMembershipStatus(),
-  builder: (context, snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return const Center(child: CircularProgressIndicator());
-    }
+        stream: getMembershipStatus(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-    // If user has NOT applied yet
-    if (!snapshot.hasData || !snapshot.data!.exists) {
-      return buildUploadSection();
-    }
+          // If user has NOT applied yet
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return buildUploadSection();
+          }
 
-    final data = snapshot.data!.data() as Map<String, dynamic>;
-    final status = data['status'] ?? 'pending';
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          final status = data['status'] ?? 'pending';
 
-    if (status == 'pending') {
-      return buildPendingSection();
-    } else if (status == 'approved') {
-      return buildApprovedSection();
-    } else if (status == 'rejected') {
-      return buildRejectedSection();
-    }
+          if (status == 'pending') {
+            return buildPendingSection();
+          } else if (status == 'approved') {
+            return buildApprovedSection();
+          } else if (status == 'rejected') {
+            return buildRejectedSection();
+          }
 
-    return buildUploadSection(); // fallback
-  },
-),
-
+          return buildUploadSection(); // fallback
+        },
+      ),
     );
   }
 }
