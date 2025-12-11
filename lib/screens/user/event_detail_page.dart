@@ -22,7 +22,6 @@ class _EDetailPageState extends State<EDetailPage> {
   // User info variables
   String? userId;
   String? userName;
-  String? userImage;
   bool loadingUser = true;
 
   @override
@@ -35,7 +34,6 @@ class _EDetailPageState extends State<EDetailPage> {
   Future<void> loadUserInfo() async {
     userId = await SharedpreferenceHelper().getUserId();
     userName = await SharedpreferenceHelper().getUserName();
-    userImage = await SharedpreferenceHelper().getUserImage();
     setState(() {
       loadingUser = false;
     }); // rebuild UI after loading
@@ -94,6 +92,13 @@ class _EDetailPageState extends State<EDetailPage> {
                     SizedBox(width: 20),
                     GestureDetector(
                       onTap: () {
+
+                        if (userId == null || userName == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("User information not loaded. Please try again.")),
+                          );
+                          return;
+                        }
                         // Pass user info to PaymentPage
                         Navigator.push(
                           context,
@@ -102,7 +107,6 @@ class _EDetailPageState extends State<EDetailPage> {
                               eventId: widget.eventId,
                               userId: userId!,
                               userName: userName!,
-                              userImage: userImage!,
                               amount: total.toString(),
                             ),
                           ),
@@ -143,14 +147,12 @@ class PaymentPage extends StatefulWidget {
   final String userId;
   final String amount;
   final String userName;
-  final String userImage;
 
   PaymentPage({
     required this.eventId,
     required this.userId,
     required this.amount,
     required this.userName,
-    required this.userImage,
   });
 
   @override
@@ -204,7 +206,6 @@ class _PaymentPageState extends State<PaymentPage> {
       Map<String, dynamic> paymentData = {
         "userId": widget.userId,
         "userName": widget.userName,
-        "userImage": widget.userImage,
         "amount": widget.amount,
         "receiptPdf": pdfUrl,
         "timestamp": FieldValue.serverTimestamp(),
@@ -253,7 +254,7 @@ class _PaymentPageState extends State<PaymentPage> {
           children: [
             Center(
               child: Image.asset(
-                "images/qrbank.jpg",
+                "assets/qrbank.jpg",
                 width: 250,
                 height: 250,
               ),
