@@ -44,7 +44,7 @@ class _EDetailPageState extends State<EDetailPage> {
     // Wait until user info is loaded
     if (loadingUser) {
       return Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Align(alignment: Alignment.topLeft, child: CircularProgressIndicator()),
       );
     }
 
@@ -56,12 +56,12 @@ class _EDetailPageState extends State<EDetailPage> {
         .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return Center(child: CircularProgressIndicator());
+            return Align(alignment: Alignment.topLeft, child: CircularProgressIndicator());
           }
           
           // Check if the document exists
           if (!snapshot.data!.exists) {
-            return Center(child: Text("Event not found"));
+            return Align(alignment: Alignment.topLeft, child: CircularProgressIndicator());
           }
 
           var data = snapshot.data!;
@@ -80,7 +80,93 @@ class _EDetailPageState extends State<EDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // ... Your existing event UI code ...
-                Stack(children: [ image != "" ? Image.network( image, height: MediaQuery.of(context).size.height / 2, width: MediaQuery.of(context).size.width, fit: BoxFit.cover, ) : Image.asset( "images/event.jpg", height: MediaQuery.of(context).size.height / 2, width: MediaQuery.of(context).size.width, fit: BoxFit.cover, ), Container( height: MediaQuery.of(context).size.height / 2, child: Column( mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [ GestureDetector( onTap: () => Navigator.pop(context), child: Container( padding: EdgeInsets.all(8), margin: EdgeInsets.only(top: 40.0, left: 20.0), decoration: BoxDecoration( color: Colors.white, borderRadius: BorderRadius.circular(30), ), child: Icon(Icons.arrow_back_ios_new_outlined), ), ), Container( width: double.infinity, padding: EdgeInsets.all(20), color: Colors.black54, child: Column( crossAxisAlignment: CrossAxisAlignment.start, children: [ Text(name, style: TextStyle( color: Colors.white, fontSize: 25, fontWeight: FontWeight.bold)), Row( children: [ Icon(Icons.calendar_month, color: Colors.white), SizedBox(width: 10), Text(date, style: TextStyle( color: Colors.white, fontSize: 18)), SizedBox(width: 20), Icon(Icons.location_on_outlined, color: Colors.white), SizedBox(width: 10), Text(location, style: TextStyle( color: Colors.white, fontSize: 18)), ], ) ], ), ) ], ), ) ]), SizedBox(height: 20), Padding( padding: EdgeInsets.only(left: 20), child: Text("About Event", style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)), ), SizedBox(height: 10), Padding( padding: EdgeInsets.symmetric(horizontal: 20), child: Text(detail, style: TextStyle( fontSize: 17, fontWeight: FontWeight.w500)), ), SizedBox(height: 20), Padding( padding: EdgeInsets.symmetric(horizontal: 20), child: Row(children: [ Text("Tickets", style: TextStyle( fontSize: 22, fontWeight: FontWeight.bold)), SizedBox(width: 40), Container( width: 50, decoration: BoxDecoration( border: Border.all(width: 2), borderRadius: BorderRadius.circular(10)), child: Column( children: [ GestureDetector( onTap: () => setState(() => ticket++), child: Text("+", style: TextStyle(fontSize: 25))), Text(ticket.toString(), style: TextStyle( fontSize: 25, fontWeight: FontWeight.bold, color: Color(0xff6351ec))), GestureDetector( onTap: () { if (ticket > 1) setState(() => ticket--); }, child: Text("-", style: TextStyle(fontSize: 25))), ], ), ) ]), ), SizedBox(height: 20),
+                Stack(children: [ 
+                  image != "" ? Image.network( image, height: MediaQuery.of(context).size.height / 2, 
+                                  width: MediaQuery.of(context).size.width, fit: BoxFit.cover, ) 
+                              : Image.asset( "images/event.jpg", height: MediaQuery.of(context).size.height / 2, 
+                                  width: MediaQuery.of(context).size.width, fit: BoxFit.cover, ), 
+                  Container( 
+                    height: MediaQuery.of(context).size.height / 2, 
+                    child: Column( 
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+                        children: [ 
+                          GestureDetector( 
+                            onTap: () => Navigator.pop(context), 
+                            child: 
+                              Container( 
+                                padding: EdgeInsets.all(8), 
+                                margin: EdgeInsets.only(top: 40.0, left: 20.0), 
+                                decoration: BoxDecoration( color: Colors.white, borderRadius: BorderRadius.circular(30), ), 
+                                child: Icon(Icons.arrow_back_ios_new_outlined), 
+                              ), 
+                          ), 
+                          Container( 
+                            width: double.infinity, padding: EdgeInsets.all(20), color: Colors.black54, 
+                            child: Column( 
+                              crossAxisAlignment: CrossAxisAlignment.start, 
+                              children: [ 
+                                Text(name, style: TextStyle( color: Colors.white, fontSize: 25, fontWeight: FontWeight.bold)), 
+                                Row( children: [ 
+                                  Icon(Icons.calendar_month, color: Colors.white), 
+                                  SizedBox(width: 10), 
+                                  Text(date, style: TextStyle( color: Colors.white, fontSize: 18)), 
+                                  SizedBox(width: 20), 
+                                  Icon(Icons.location_on_outlined, color: Colors.white), 
+                                  SizedBox(width: 10), 
+                                  Text(location, style: TextStyle( color: Colors.white, fontSize: 18)), 
+                                ], ) 
+                              ], 
+                            ), 
+                          ) 
+                        ], 
+                    ), 
+                  ) 
+                ]), 
+                SizedBox(height: 20), 
+
+                Padding( padding: EdgeInsets.only(left: 20), 
+                  child: Text("About Event", style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)), 
+                ), 
+
+                SizedBox(height: 10), 
+
+                Padding( padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(detail, style: TextStyle( fontSize: 17, fontWeight: FontWeight.w500)), 
+                ), 
+
+                SizedBox(height: 20), 
+                
+                Padding( padding: EdgeInsets.symmetric(horizontal: 20), 
+                child: Row(
+                  children: [ 
+                    Text("Tickets", style: TextStyle( fontSize: 22, fontWeight: FontWeight.bold)), 
+                    SizedBox(width: 40), 
+                    Container( 
+                      padding: EdgeInsets.symmetric(horizontal: 18.0),
+                      decoration: BoxDecoration( border: Border.all(width: 2), borderRadius: BorderRadius.circular(10)), 
+                      child: Row( 
+                        children: [ 
+                          GestureDetector( 
+                            onTap: () => setState(() => ticket++), 
+                            child: 
+                              Text("+", style: TextStyle(fontSize: 25))
+                          ), 
+                          SizedBox(width: 20),
+                          Text(ticket.toString(), style: TextStyle( fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xff6351ec))), 
+                          SizedBox(width: 20),
+                          GestureDetector( 
+                            onTap: () { if (ticket > 1) setState(() => ticket--); }, 
+                            child: 
+                              Text("-", style: TextStyle(fontSize: 25))
+                          ), 
+                        ], 
+                      ),
+                    ) 
+                  ]), 
+                ), 
+                
+                SizedBox(height: 20),
+                
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20),
                   child: Row(children: [
