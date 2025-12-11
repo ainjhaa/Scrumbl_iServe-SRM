@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:demo_app/screens/admin/news_detail_page.dart';
-import 'package:demo_app/screens/admin/news_list_page.dart';
+import 'package:demo_app/screens/user/news_detail_page.dart';
+import 'package:demo_app/screens/user/news_list_page.dart';
 
 class NewsCarouselSection extends StatelessWidget {
   final String title;

@@ -14,7 +14,7 @@ import 'package:demo_app/screens/admin/user_management.dart';
 import 'package:demo_app/widgets/nav_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:demo_app/screens/admin/report_page.dart';
-import 'package:demo_app/widgets/news_carousel.dart';
+import 'package:demo_app/widgets/admin_news_carousel.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});

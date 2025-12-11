@@ -10,6 +10,7 @@ import '../widgets/nav_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'user/list_events_page.dart';
 import 'user/badge_page.dart';
+import 'package:demo_app/widgets/user_news_carousel.dart';
 
 class HomeMember extends StatefulWidget {
   const HomeMember({super.key});
@@ -208,25 +209,9 @@ class _HomeMemberState extends State<HomeMember> {
 
             const SizedBox(height: 30),
 
-            InfoSection(
-              title: "What's Up News !",
-              linkLabel: "See More",
-              onLinkTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const PlaceholderPage("Announcements")));
-              },
-              items: const [
-                {"title": "New Committee Intake", "image": "assets/news1.jpg"},
-              ],
-              cardWidth: 350,   // 🔧 You can tweak width
-              cardHeight: 230,
-              imageHeight: 180,
-              //imageBorderRadius: 15,
-            ),
+            NewsCarouselSection(title: "What's Up News!"),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 50),
           ],
         ),
 
