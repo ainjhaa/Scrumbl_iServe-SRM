@@ -15,6 +15,7 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
+  TextEditingController name = TextEditingController();
   TextEditingController email = TextEditingController();
   TextEditingController password = TextEditingController();
   TextEditingController confirm = TextEditingController();
@@ -34,6 +35,7 @@ class _SignUpPageState extends State<SignUpPage> {
           .collection('users')
           .doc(user.uid)
           .set({
+        'name': name.text,
         'email': email.text,
         'role': 'Volunteer', // or Admin
       });
@@ -87,6 +89,11 @@ class _SignUpPageState extends State<SignUpPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextField(
+              controller: name,
+              decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 20),
+            TextField(
               controller: email,
               decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
             ),
@@ -101,6 +108,15 @@ class _SignUpPageState extends State<SignUpPage> {
               controller: confirm,
               obscureText: true,
               decoration: const InputDecoration(labelText: 'Confirm Password', border: OutlineInputBorder()),
+            ),      
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/login');
+                },
+                child: const Text('Already have an account?'),
+              ),
             ),
             const SizedBox(height: 30),
             ElevatedButton(
