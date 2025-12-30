@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../services/notification_service.dart';
 
 class UserManagementPage extends StatefulWidget {
   const UserManagementPage({super.key});
@@ -429,10 +430,19 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
           ElevatedButton(
             onPressed: () async {
               if (selectedStatus == null) return;
+
               await FirebaseFirestore.instance
                   .collection("users")
                   .doc(userId)
                   .update({"role": selectedStatus});
+
+              if (currentStatus == "Volunteer" &&
+                selectedStatus == "Member") {
+                await NotificationService.sendMemberWelcome(
+                  userId: userId,
+                );
+              }
+
               Navigator.pop(context);
               setState(() {});
               ScaffoldMessenger.of(context).showSnackBar(
