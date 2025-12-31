@@ -51,9 +51,10 @@ dependencies:
   random_string:
   intl: ^0.18.0
   flutter_stripe: 
-  http:
+  http: ^1.6.0
   geolocator: 
   geocoding: 
+  flutter_dotenv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -79,6 +80,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
+    - .env
     - assets/rakan_niaga.png
     - assets/rakan_prihatin.png
     - assets/rakan_bumi.png
