@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/ai_chat_popup.dart';
 import '../widgets/info_section.dart';
 import 'notification_page.dart';
@@ -56,8 +57,21 @@ class _HomeMemberState extends State<HomeMember> {
   );
 }
 
-  signout() async{
-    await FirebaseAuth.instance.signOut();
+  // In HomePage, HomeMember, and AdminPage - Update signout() method:
+  signout() async {
+    try {
+      // Clear SharedPreferences first
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+    
+      // Then sign out from Firebase
+      await FirebaseAuth.instance.signOut();
+    
+      print('✅ Cleared SharedPreferences and signed out');
+    } catch (e) {
+      print('❌ Logout error: $e');
+      await FirebaseAuth.instance.signOut(); // Still try to sign out
+    }
   }
 
   String currentUserName = "";
