@@ -12,6 +12,7 @@ import '../widgets/membership_card.dart';*/
 //import 'package:demo_app/screens/placeholder_page.dart';
 import 'package:demo_app/screens/admin/user_management.dart';
 import 'package:demo_app/widgets/nav_button.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:demo_app/screens/admin/report_page.dart';
 import 'package:demo_app/widgets/admin_news_carousel.dart';
@@ -60,8 +61,21 @@ class _AdminState extends State<AdminPage> {
     );
   }
 
-  signout() async{
-    await FirebaseAuth.instance.signOut();
+  // In HomePage, HomeMember, and AdminPage - Update signout() method:
+  signout() async {
+    try {
+      // Clear SharedPreferences first
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+    
+      // Then sign out from Firebase
+      await FirebaseAuth.instance.signOut();
+    
+      print('✅ Cleared SharedPreferences and signed out');
+    } catch (e) {
+      print('❌ Logout error: $e');
+      await FirebaseAuth.instance.signOut(); // Still try to sign out
+    }
   }
 
   String currentUserName = "";
