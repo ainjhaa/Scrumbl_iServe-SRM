@@ -17,8 +17,6 @@ class EDetailPage extends StatefulWidget {
 }
 
 class _EDetailPageState extends State<EDetailPage> {
-  int ticket = 1;
-  int total = 0;
 
   // User info variables
   String? userId;
@@ -118,8 +116,7 @@ Future<void> loadUserInfo() async {
           String detail = data["Detail"];
           int price =
               int.parse(data["Price"].toString().replaceAll("RM", ""));
-
-          total = price * ticket;
+          bool isFreeEvent = price == 0;  
 
           return SingleChildScrollView(
             child: Column(
@@ -187,44 +184,13 @@ Future<void> loadUserInfo() async {
                 Padding( padding: EdgeInsets.symmetric(horizontal: 20),
                   child: Text(detail, style: TextStyle( fontSize: 17)), 
                 ), 
-
-                SizedBox(height: 20), 
-                
-                Padding( padding: EdgeInsets.symmetric(horizontal: 20), 
-                child: Row(
-                  children: [ 
-                    Text("Tickets", style: TextStyle( fontSize: 22, fontWeight: FontWeight.bold)), 
-                    SizedBox(width: 40), 
-                    Container( 
-                      padding: EdgeInsets.symmetric(horizontal: 18.0),
-                      decoration: BoxDecoration( border: Border.all(width: 2), borderRadius: BorderRadius.circular(10)), 
-                      child: Row( 
-                        children: [ 
-                          GestureDetector( 
-                            onTap: () => setState(() => ticket++), 
-                            child: 
-                              Text("+", style: TextStyle(fontSize: 25))
-                          ), 
-                          SizedBox(width: 20),
-                          Text(ticket.toString(), style: TextStyle( fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xff6351ec))), 
-                          SizedBox(width: 20),
-                          GestureDetector( 
-                            onTap: () { if (ticket > 1) setState(() => ticket--); }, 
-                            child: 
-                              Text("-", style: TextStyle(fontSize: 25))
-                          ), 
-                        ], 
-                      ),
-                    ) 
-                  ]), 
-                ), 
-                
+                              
                 SizedBox(height: 20),
                 
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20),
                   child: Row(children: [
-                    Text("Amount: RM$total",
+                    Text("Amount: RM$price",
                         style: TextStyle(
                             fontSize: 23,
                             color: Color(0xff6351ec),
@@ -275,19 +241,32 @@ Future<void> loadUserInfo() async {
                           }
     
                           // Pass user info to PaymentPage
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => PaymentPage(
-                                eventId: widget.eventId,
-                                userId: user.uid, // Direct from FirebaseAuth
-                                userName: actualUserName,
-                                amount: total.toString(),
+                          if (isRegistered) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("You are already registered")),
+                            );
+                            return;
+                          }
+
+                          if (price == 0) {
+                            // 🆓 FREE EVENT
+                            registerFreeEvent();
+                          } else {
+                            // 💰 PAID EVENT
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PaymentPage(
+                                  eventId: widget.eventId,
+                                  userId: user.uid, // Direct from FirebaseAuth
+                                  userName: actualUserName,
+                                  amount: price.toString(),
+                                ),
                               ),
-                            ),
-                          ).then((_) {
-                            checkRegistration();
-                          });
+                            ).then((_) {
+                              checkRegistration();
+                            });
+                          }
                         },
                         child: Container(
                           width: 150,
@@ -313,6 +292,58 @@ Future<void> loadUserInfo() async {
       ),
     );
   }
+  Future<void> registerFreeEvent() async {
+    if (userId == null || userName == null) return;
+
+    final userEventRef = FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .collection("RegisteredEvents")
+        .doc(widget.eventId);
+
+    final eventPaymentRef = FirebaseFirestore.instance
+        .collection("Event")
+        .doc(widget.eventId)
+        .collection("Payments")
+        .doc(userId);
+
+    final existing = await userEventRef.get();
+    if (existing.exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("You are already registered")),
+      );
+      return;
+    }
+
+    // 🔹 Register user
+    await userEventRef.set({
+      "eventId": widget.eventId,
+      "registrationDate": FieldValue.serverTimestamp(),
+      "status": "registered",
+      "payment": "free",
+    });
+
+    // 🔹 Optional: record as payment = FREE
+    await eventPaymentRef.set({
+      "userId": userId,
+      "userName": userName,
+      "amount": "0",
+      "type": "free",
+      "timestamp": FieldValue.serverTimestamp(),
+    });
+
+    setState(() {
+      isRegistered = true;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Successfully registered for free event 🎉"),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
 }
 
 //////////////////////////////////////////////////////////////////////////////
