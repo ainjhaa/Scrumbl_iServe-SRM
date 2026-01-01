@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../../services/notification_service.dart';
 
 class AdminNewsPage extends StatefulWidget {
   const AdminNewsPage({super.key});
@@ -60,6 +61,12 @@ class _AdminNewsPageState extends State<AdminNewsPage> {
         "tag": selectedTag,               
         "location": locationCtrl.text,    // (optional)
       });
+
+      // 🔔 SEND NOTIFICATION TO ALL USERS
+      await NotificationService.sendNewsNotification(
+        newsTitle: titleCtrl.text,
+        tag: selectedTag ?? "News",
+      );
 
       titleCtrl.clear();
       descCtrl.clear();
@@ -174,56 +181,7 @@ class _AdminNewsPageState extends State<AdminNewsPage> {
             ),
           ),
 
-          /*const Divider(),
-
-          // ---------------------------
-          // Display Existing News
-          // ---------------------------
-          Expanded(
-            child: StreamBuilder(
-              stream: FirebaseFirestore.instance
-                  .collection("news")
-                  .orderBy("timestamp", descending: true)
-                  .snapshots(),
-
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final docs = snapshot.data!.docs;
-
-                if (docs.isEmpty) {
-                  return const Center(child: Text("No news available"));
-                }
-
-                return ListView.builder(
-                  itemCount: docs.length,
-                  itemBuilder: (context, index) {
-                    var news = docs[index];
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      child: ListTile(
-                        leading: Image.network(
-                          news["image"],
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                        ),
-                        title: Text(news["title"]),
-                        subtitle: Text(news["description"], maxLines: 1, overflow: TextOverflow.ellipsis),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => deleteNews(news.id),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),*/
+          
         ],
       ),
     );

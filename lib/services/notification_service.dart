@@ -19,8 +19,38 @@ class NotificationService {
       "message":
           "Congratulations $userName! You are now officially a member. Thank you for being part of our community 💙",
       "type": "role_change",
+      "targetRoute": "null", // ✅ welcome message → no action
       "createdAt": Timestamp.now(),
       "isRead": false,
     });
+  }
+
+  // 🔔 Notify all users about new news
+  static Future<void> sendNewsNotification({
+    required String newsTitle,
+    required String tag,
+  }) async {
+
+    final usersSnapshot =
+        await FirebaseFirestore.instance.collection("users").get();
+
+    final batch = FirebaseFirestore.instance.batch();
+
+    for (var doc in usersSnapshot.docs) {
+      batch.set(
+        FirebaseFirestore.instance.collection("notifications").doc(),
+        {
+          "userId": doc.id,
+          "title": "New $tag",
+          "message": "A new \"$newsTitle\" has just been published. Check it out!",
+          "type": "news",
+          "targetRoute": "/news", // optional: redirect to news page
+          "createdAt": FieldValue.serverTimestamp(),
+          "isRead": false,
+        },
+      );
+    }
+
+    await batch.commit();
   }
 }

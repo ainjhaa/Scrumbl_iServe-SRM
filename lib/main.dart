@@ -7,6 +7,7 @@ import 'screens/auth/login_page.dart';
 import 'screens/auth/signup_page.dart';
 import 'screens/auth/forgot_password_page.dart';
 import 'package:demo_app/screens/admin/user_management.dart';
+import 'package:demo_app/screens/user/news_list_page.dart';
 //import 'screens/auth/twofa_page.dart';
 //import 'screens/profile_page.dart';
 //import 'screens/notification_page.dart';
@@ -33,7 +34,8 @@ class iServeSRM extends StatelessWidget {
         '/forgot': (_) => const ForgotPasswordPage(),
         '/signup': (_) => const SignUpPage(),
         '/home': (_) => const HomePage(),
-        "/userManagement": (context) => const UserManagementPage(),
+        '/userManagement': (context) => const UserManagementPage(),
+        '/news': (context) => const NewsListPage(),
         /*'/profile': (_) => const ProfilePage(),
         '/notification': (_) => const NotificationPage(),*/
       },
