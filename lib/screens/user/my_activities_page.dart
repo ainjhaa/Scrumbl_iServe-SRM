@@ -191,54 +191,74 @@ class MyActivitiesPage extends StatelessWidget {
                                           ],
                                         ),
                                       const SizedBox(height: 12),
-                                      // Receipt Buttons
-                                      FutureBuilder<Receipt?>(
-                                        future: _getProgramReceipt(userId, eventId),
-                                        builder: (context, receiptSnapshot) {
-                                          return Column(
-                                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                                            children: [
-                                              // Generated Receipt Button
-                                              if (receiptSnapshot.hasData && receiptSnapshot.data != null)
-                                                Column(
-                                                  children: [
-                                                    ElevatedButton.icon(
-                                                      onPressed: () {
-                                                        final receipt = receiptSnapshot.data!;
-                                                        _showGeneratedReceiptDialog(context, receipt);
-                                                      },
-                                                      icon: const Icon(Icons.receipt),
-                                                      label: const Text("View Generated Receipt"),
-                                                      style: ElevatedButton.styleFrom(
-                                                        backgroundColor: Colors.blue,
-                                                        foregroundColor: Colors.white,
+                                      // ✅ Receipt Buttons - Only show for PAID events (not free events)
+                                      // Check if this is NOT a free event
+                                      if (eventPrice != "N/A" && eventPrice != "RM0" && eventPrice != "0")
+                                        FutureBuilder<Receipt?>(
+                                          future: _getProgramReceipt(userId, eventId),
+                                          builder: (context, receiptSnapshot) {
+                                            return Column(
+                                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                                              children: [
+                                                // Generated Receipt Button
+                                                if (receiptSnapshot.hasData && receiptSnapshot.data != null)
+                                                  Column(
+                                                    children: [
+                                                      ElevatedButton.icon(
+                                                        onPressed: () {
+                                                          final receipt = receiptSnapshot.data!;
+                                                          _showGeneratedReceiptDialog(context, receipt);
+                                                        },
+                                                        icon: const Icon(Icons.receipt),
+                                                        label: const Text("View Generated Receipt"),
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor: Colors.blue,
+                                                          foregroundColor: Colors.white,
+                                                        ),
                                                       ),
-                                                    ),
-                                                    const SizedBox(height: 8),
-                                                  ],
-                                                ),
-                                              // Uploaded Receipt Button
-                                              if (receiptPdf != null)
-                                                ElevatedButton.icon(
-                                                  onPressed: () {
-                                                    _showReceiptDialog(context, receiptPdf);
-                                                  },
-                                                  icon: const Icon(Icons.picture_as_pdf),
-                                                  label: const Text("View Uploaded Receipt"),
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: Colors.green,
-                                                    foregroundColor: Colors.white,
+                                                      const SizedBox(height: 8),
+                                                    ],
                                                   ),
-                                                )
-                                              else
-                                                const Text(
-                                                  "No receipt uploaded yet",
-                                                  style: TextStyle(color: Colors.red),
+                                                // Uploaded Receipt Button
+                                                if (receiptPdf != null)
+                                                  ElevatedButton.icon(
+                                                    onPressed: () {
+                                                      _showReceiptDialog(context, receiptPdf);
+                                                    },
+                                                    icon: const Icon(Icons.picture_as_pdf),
+                                                    label: const Text("View Uploaded Receipt"),
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: Colors.green,
+                                                      foregroundColor: Colors.white,
+                                                    ),
+                                                  )
+                                                else
+                                                  const Text(
+                                                    "No receipt uploaded yet",
+                                                    style: TextStyle(color: Colors.red),
+                                                  ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      // ✅ For FREE events - Show confirmation message
+                                      if (eventPrice == "RM0" || eventPrice == "0")
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(vertical: 8),
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.check_circle, color: Colors.green, size: 18),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                "Free event - No receipt required",
+                                                style: TextStyle(
+                                                  color: Colors.green,
+                                                  fontStyle: FontStyle.italic,
                                                 ),
+                                              ),
                                             ],
-                                          );
-                                        },
-                                      ),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),

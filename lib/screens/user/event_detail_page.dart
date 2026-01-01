@@ -85,6 +85,96 @@ Future<void> loadUserInfo() async {
     }
   }
 
+  // ✅ Register for FREE event and generate system receipt
+  Future<void> _registerFreeEventWithReceipt({
+    required User user,
+    required String userName,
+    required String eventId,
+    required String eventName,
+    required String eventDate,
+    required String eventLocation,
+  }) async {
+    try {
+      // Get user email
+      final userDoc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .get();
+      
+      final userEmail = userDoc.data()?['email'] ?? 
+                        userDoc.data()?['Email'] ?? 
+                        userName;
+
+      // ✅ Create registration record
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .collection("RegisteredEvents")
+          .doc(eventId)
+          .set({
+        "eventId": eventId,
+        "registrationDate": FieldValue.serverTimestamp(),
+        "status": "registered",
+        "paymentStatus": "free",
+        "amount": 0,
+      });
+
+      // ✅ Create payment record for FREE event
+      await FirebaseFirestore.instance
+          .collection("Event")
+          .doc(eventId)
+          .collection("Payments")
+          .doc(user.uid)
+          .set({
+        "userId": user.uid,
+        "userName": userName,
+        "userEmail": userEmail,
+        "amount": "0",
+        "type": "free",
+        "paymentStatus": "free",
+        "timestamp": FieldValue.serverTimestamp(),
+      });
+
+      // ✅ Generate and save program fee receipt for FREE event
+      final programReceiptService = ProgramReceiptService();
+      final receiptResult = await programReceiptService.generateProgramReceipt(
+        userId: user.uid,
+        userName: userName,
+        userEmail: userEmail,
+        eventId: eventId,
+        eventName: eventName,
+        eventDate: eventDate,
+        eventLocation: eventLocation,
+        amount: 0.0, // FREE event has no fee
+        uploadedReceiptUrl: '', // No uploaded receipt for free events
+      );
+
+      if (!receiptResult['success']) {
+        print('Warning: Free event receipt generation had issues: ${receiptResult['error']}');
+      }
+
+      setState(() {
+        isRegistered = true;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Successfully registered for free event! Receipt generated and saved."),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error registering for free event: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Registration failed: $e")),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Wait until user info is loaded
@@ -274,13 +364,34 @@ Future<void> loadUserInfo() async {
                             actualUserName = 'User';
                           }
     
-                          // Pass user info to PaymentPage
+                          // ✅ Get event details from StreamBuilder data
+                          var data = snapshot.data!;
+                          String eventName = data["Name"];
+                          String eventDate = data["Date"];
+                          String eventLocation = data["Location"];
+                          int price = int.parse(data["Price"].toString().replaceAll("RM", ""));
+
+                          // Check if it's a FREE event (RM0)
+                          if (price == 0) {
+                            // ✅ Register for FREE event with automatic receipt generation
+                            await _registerFreeEventWithReceipt(
+                              user: user,
+                              userName: actualUserName,
+                              eventId: widget.eventId,
+                              eventName: eventName,
+                              eventDate: eventDate,
+                              eventLocation: eventLocation,
+                            );
+                            return;
+                          }
+
+                          // ✅ For PAID events, go to payment page
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => PaymentPage(
                                 eventId: widget.eventId,
-                                userId: user.uid, // Direct from FirebaseAuth
+                                userId: user.uid,
                                 userName: actualUserName,
                                 amount: total.toString(),
                               ),
