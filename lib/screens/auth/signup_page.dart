@@ -35,6 +35,9 @@ class _SignUpPageState extends State<SignUpPage> {
         'name': name.text,
         'email': email.text,
         'role': 'Volunteer', // or Admin
+        'position': null,
+        'matricNumber': "",
+        'createdAt': FieldValue.serverTimestamp(),
       });
     }
 

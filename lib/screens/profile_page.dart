@@ -27,7 +27,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _initializeReceipts() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       // Generate receipt for membership registration if it doesn't exist
       await ReceiptSyncService.generateMembershipRegistrationReceipt(user.uid);
@@ -84,7 +84,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 // Name
                 Row(
                   children: [
-                    const Icon(Icons.person, size: 28),
+                    const Icon(Icons.person, size: 25),
                     const SizedBox(width: 10),
                     Text(
                       data["name"] ?? "No Name",
@@ -96,32 +96,82 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
 
-                const SizedBox(height: 15),
+                const SizedBox(height: 10),
 
                 // Email
                 Row(
                   children: [
-                    const Icon(Icons.email, size: 28),
+                    const Icon(Icons.email, size: 25),
                     const SizedBox(width: 10),
                     Text(
                       data["email"] ?? "No Email",
-                      style: const TextStyle(fontSize: 18),
+                      style: const TextStyle(fontSize: 16),
                     )
                   ],
                 ),
 
-                const SizedBox(height: 15),
+                const SizedBox(height: 10),
 
                 // Role
                 Row(
                   children: [
-                    const Icon(Icons.badge, size: 28),
+                    const Icon(Icons.badge, size: 25),
                     const SizedBox(width: 10),
                     Text(
                       data["role"] ?? "Volunteer",
-                      style: const TextStyle(fontSize: 18),
+                      style: const TextStyle(fontSize: 16),
                     )
                   ],
+                ),
+
+                const SizedBox(height: 10),
+
+                Row(
+                  children: [
+                    const Icon(Icons.workspace_premium, size: 25),
+                    const SizedBox(width: 10),
+                    Text(
+                      data["status"] ?? "No Position",
+                      style: const TextStyle(fontSize: 16),
+                    )
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                Row(
+                  children: [
+                    const Icon(Icons.confirmation_number, size: 25),
+                    const SizedBox(width: 10),
+                    Text(
+                      data["matricNumber"]?.isNotEmpty == true
+                          ? data["matricNumber"]
+                          : "No Matric Number",
+                      style: const TextStyle(fontSize: 16),
+                    )
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.edit),
+                  label: const Text("Update Profile"),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EditProfilePage(
+                          email: data["email"],
+                          matricNumber: data["matricNumber"] ?? "",
+                        ),
+                      ),
+                    ).then((_) {
+                      setState(() {
+                        _userDataFuture = getUserData();
+                      });
+                    });
+                  },
                 ),
 
                 const SizedBox(height: 30),
@@ -510,5 +560,108 @@ class _ProfilePageState extends State<ProfilePage> {
         );
       }
     }
+  }
+}
+
+// Edit Profile Page
+class EditProfilePage extends StatefulWidget {
+  final String email;
+  final String matricNumber;
+
+  const EditProfilePage({
+    super.key,
+    required this.email,
+    required this.matricNumber,
+  });
+
+  @override
+  State<EditProfilePage> createState() => _EditProfilePageState();
+}
+
+class _EditProfilePageState extends State<EditProfilePage> {
+  late TextEditingController emailCtrl;
+  late TextEditingController matricCtrl;
+  bool saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    emailCtrl = TextEditingController(text: widget.email);
+    matricCtrl = TextEditingController(text: widget.matricNumber);
+  }
+
+  Future<void> saveProfile() async {
+    final User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => saving = true);
+
+    try {
+      final newEmail = emailCtrl.text.trim();
+
+      // ✅ Update email safely
+      if (newEmail != widget.email) {
+        await user.verifyBeforeUpdateEmail(newEmail);
+      }
+
+      // ✅ Update Firestore user profile
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .update({
+        "email": newEmail,
+        "matricNumber": matricCtrl.text.trim(),
+        "updatedAt": FieldValue.serverTimestamp(),
+      });
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Profile updated. Verify your new email."),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
+
+    setState(() => saving = false);
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Edit Profile")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            TextField(
+              controller: emailCtrl,
+              decoration: const InputDecoration(labelText: "Email"),
+            ),
+
+            const SizedBox(height: 15),
+
+            TextField(
+              controller: matricCtrl,
+              decoration: const InputDecoration(labelText: "Matric Number"),
+            ),
+
+            const SizedBox(height: 30),
+
+            saving
+                ? const CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: saveProfile,
+                    child: const Text("Save Changes"),
+                  ),
+          ],
+        ),
+      ),
+    );
   }
 }

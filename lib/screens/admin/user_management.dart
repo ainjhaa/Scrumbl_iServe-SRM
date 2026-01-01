@@ -3,6 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/notification_service.dart';
 
+const List<String> memberStatuses = [
+  "PRESIDENT", "VICE PRESIDENT", "DEPUTY VICE PRESIDENT MANAGEMENT",
+  "DEPUTY VICE PRESIDENT ACTIVITIES", "SECRETARY GENERAL", "SECRETARY OF WORK",
+  "HONORARY TREASURER", "MANAGING TREASURER", "HEAD OF RAKAN MUDA", "RAKAN MUDA",
+];
+
 class UserManagementPage extends StatefulWidget {
   const UserManagementPage({super.key});
 
@@ -31,8 +37,6 @@ class _UserManagementPageState extends State<UserManagementPage>
     switch (role.toLowerCase()) {
       case "admin":
         return Colors.red;
-      case "committee":
-        return Colors.blue;
       case "volunteer":
         return Colors.green;
       case "member":
@@ -85,6 +89,9 @@ class _UserManagementPageState extends State<UserManagementPage>
                   final user = users[index];
                   final name = user['name'];
                   final role = user['role'];
+                  final status = user.data().toString().contains('status')
+                    ? user['status']
+                    : null;
 
                   return Card(
                     elevation: 3,
@@ -116,12 +123,15 @@ class _UserManagementPageState extends State<UserManagementPage>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text("Role: $role"),
-                              if (role.toLowerCase() == "volunteer" ||
-                                  role.toLowerCase() == "member")
-                                Text("Membership Status: ${capitalize(memStatus)}",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.deepPurple)),
+
+                              if (role.toLowerCase() == "admin" || role.toLowerCase() == "member")
+                                Text(
+                                  "Position: ${status ?? "Not Assigned"}",
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.deepPurple,
+                                  ),
+                                ),
                             ],
                           );
                         },
@@ -322,6 +332,16 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.deepPurple)),
+                    //const SizedBox(height: 10),
+                    if ((currentStatus == "Member" || currentStatus == "Admin") && data.data().toString().contains('status'))
+                      Text(
+                        "Position: ${data['status']}",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal,
+                        ),
+                      ),
                     const SizedBox(height: 10),
                     if (fileName.isNotEmpty && currentStatus.toLowerCase() == "volunteer")
                       InkWell(
@@ -336,18 +356,8 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
                               decoration: TextDecoration.underline),
                         ),
                       ),
-                    const SizedBox(height: 20),
-
-                    // Change role button
-                    ElevatedButton(
-                      onPressed: () => _showChangeStatusDialog(
-                        userId: widget.userId,
-                        currentStatus: currentStatus,
-                      ),
-                      child: const Text("Change Role"),
-                    ),
-                    const SizedBox(height: 20),
-
+                    const SizedBox(height: 10),
+      
                     // Approve/Reject buttons for volunteers with pending membership
                     if (currentStatus.toLowerCase() == "volunteer" &&
                         memStatus.toLowerCase() == "pending")
@@ -391,9 +401,28 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
                             },
                             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                             child: const Text("Reject"),
-                          ),
+                          ),                          
                         ],
                       ),
+                    const SizedBox(height: 10),
+                    Row(children:[
+                      // Change role button
+                      ElevatedButton(
+                        onPressed: () => _showChangeStatusDialog(
+                          userId: widget.userId,
+                          currentStatus: currentStatus,
+                        ),
+                        child: const Text("Change Role"),
+                      ),
+                      const SizedBox(width: 20),
+                      //
+                      if (currentStatus != "Volunteer")
+                        ElevatedButton(
+                          onPressed: () => _showAssignStatusDialog(widget.userId, currentStatus),
+                          child: const Text("Assign Position"),
+                        ),
+                      //
+                    ])                 
                   ],
                 ),
               );
@@ -457,6 +486,84 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
               );
             },
             child: const Text("Confirm"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  //assigning position
+  void _showAssignStatusDialog(String userId, String currentStatus) {
+    String? selectedPosition;
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Assign Member Position"),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: DropdownButtonFormField<String>(
+            isExpanded: true, // 🔑 IMPORTANT
+            value: selectedPosition,
+            items: memberStatuses.map(
+              (s) => DropdownMenuItem(
+                value: s,
+                child: Text(
+                  s,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ).toList(),
+            onChanged: (v) => setState(() => selectedPosition = v),
+            decoration: const InputDecoration(
+              labelText: "Select Position",
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (selectedPosition == null) return;
+
+              if (currentStatus == "Volunteer" && selectedPosition == "Member") {
+                await FirebaseFirestore.instance
+                    .collection("users")
+                    .doc(widget.userId)
+                    .update({
+                      "role": "Member",
+                      "status": "Rakan Muda",
+                    });
+
+                await NotificationService.sendMemberWelcome(userId: userId);
+              }
+
+              if (currentStatus == "Member" && selectedPosition == "Volunteer") {
+                await FirebaseFirestore.instance
+                    .collection("users")
+                    .doc(widget.userId)
+                    .update({
+                      "role": "Volunteer",
+                      "status": FieldValue.delete(),
+                    });
+
+                await _resetMembershipStatus(userId);
+              }
+
+              await FirebaseFirestore.instance
+                  .collection("users")
+                  .doc(userId)
+                  .update({"status": selectedPosition});
+
+              Navigator.pop(context);
+              setState(() {});
+            },
+            child: const Text("Assign"),
           ),
         ],
       ),
