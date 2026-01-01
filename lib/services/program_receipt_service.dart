@@ -91,7 +91,24 @@ class ProgramReceiptService {
           .doc(receiptId)
           .set(receipt.toMap());
 
-      // Also save in program receipts subcollection for easy access
+      // Save to program_receipts collection (main storage for program receipts)
+      await _firestore
+          .collection('program_receipts')
+          .doc(receiptId)
+          .set(receipt.toMap());
+
+      // Mirror in program_receipts subcollection by event for easy access
+      await _firestore
+          .collection('program_receipts')
+          .doc(eventId)
+          .collection('receipts')
+          .doc(userId)
+          .set({
+        ...receipt.toMap(),
+        'receiptId': receiptId,
+      });
+
+      // Also save in Event receipts subcollection for easy access
       await _firestore
           .collection('Event')
           .doc(eventId)
@@ -156,5 +173,21 @@ class ProgramReceiptService {
       print('Error retrieving all receipts: $e');
       return [];
     }
+  }
+
+  /// Stream of all program receipts for a user (for real-time updates)
+  Stream<List<Receipt>> getUserProgramReceiptsStream(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('receipts')
+        .where('receiptType', isEqualTo: 'program_fee')
+        .orderBy('paymentDate', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Receipt.fromMap(doc.data()))
+          .toList();
+    });
   }
 }

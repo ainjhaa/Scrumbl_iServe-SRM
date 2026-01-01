@@ -344,11 +344,23 @@ class _PaymentPageState extends State<PaymentPage> {
       final eventName = eventDoc['Name'] ?? "Unknown Event";
       final eventDate = eventDoc['Date'] ?? "N/A";
       final eventLocation = eventDoc['Location'] ?? "N/A";
+      final eventPrice = eventDoc['Price']?.toString() ?? widget.amount;
+
+      // 🔹 Fetch user email from database
+      final userDoc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(widget.userId)
+          .get();
+      
+      final userEmail = userDoc.data()?['email'] ?? 
+                        userDoc.data()?['Email'] ?? 
+                        widget.userName;
 
       // 🔹 Payment data map
       Map<String, dynamic> paymentData = {
         "userId": widget.userId,
         "userName": widget.userName,
+        "userEmail": userEmail,
         "amount": widget.amount,
         "receiptPdf": pdfUrl,
         "timestamp": FieldValue.serverTimestamp(),
@@ -373,30 +385,6 @@ class _PaymentPageState extends State<PaymentPage> {
         "eventId": widget.eventId,
       });
 
-      // 🔹 Store user-uploaded receipt in program_receipts collection
-      await FirebaseFirestore.instance
-          .collection("program_receipts")
-          .doc(widget.eventId)
-          .collection("payments")
-          .doc(widget.userId)
-          .set({
-        ...paymentData,
-        "eventId": widget.eventId,
-        "receiptType": "program_fee",
-      });
-
-      // 🔹 Also store in user's program_receipts subcollection
-      await FirebaseFirestore.instance
-          .collection("users")
-          .doc(widget.userId)
-          .collection("program_receipts")
-          .doc(widget.eventId)
-          .set({
-        ...paymentData,
-        "eventId": widget.eventId,
-        "receiptType": "program_fee",
-      });
-
       // 🔹 Create registration record in Users/{userId}/RegisteredEvents/{eventId}
       await FirebaseFirestore.instance
           .collection("users")
@@ -409,12 +397,12 @@ class _PaymentPageState extends State<PaymentPage> {
         "status": "registered",
       });
 
-      // 🔹 Generate and save program fee receipt
+      // 🔹 Generate and save program fee receipt (system-generated PDF)
       final programReceiptService = ProgramReceiptService();
-      await programReceiptService.generateProgramReceipt(
+      final receiptResult = await programReceiptService.generateProgramReceipt(
         userId: widget.userId,
         userName: widget.userName,
-        userEmail: "", // Will be fetched from user data
+        userEmail: userEmail,
         eventId: widget.eventId,
         eventName: eventName,
         eventDate: eventDate,
@@ -422,6 +410,10 @@ class _PaymentPageState extends State<PaymentPage> {
         amount: double.parse(widget.amount),
         uploadedReceiptUrl: pdfUrl,
       );
+
+      if (!receiptResult['success']) {
+        print('Warning: Receipt generation had issues: ${receiptResult['error']}');
+      }
 
       setState(() => uploading = false);
 
@@ -434,6 +426,7 @@ class _PaymentPageState extends State<PaymentPage> {
       setState(() => uploading = false);
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Upload failed: $e")));
+      print('Upload error: $e');
     }
   }
 
