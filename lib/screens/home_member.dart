@@ -5,11 +5,11 @@ import '../widgets/ai_chat_popup.dart';
 import '../widgets/info_section.dart';
 import 'notification_page.dart';
 import 'profile_page.dart';
-import 'placeholder_page.dart';
 import '../widgets/nav_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'user/list_events_page.dart';
 import 'user/badge_page.dart';
+import 'user/my_activities_page.dart';
 import 'package:demo_app/widgets/user_news_carousel.dart';
 
 class HomeMember extends StatefulWidget {
@@ -152,7 +152,7 @@ class _HomeMemberState extends State<HomeMember> {
                     icon: Icons.track_changes,
                     label: "My Activities\n",
                     color: Colors.green,
-                    destination: PlaceholderPage("My Activities"),
+                    destination: MyActivitiesPage(),
                   ),
                   SizedBox(width: 10),
                   NavButton(

@@ -84,11 +84,7 @@ class NewsCarouselSection extends StatelessWidget {
                   String title = news["title"];
 
                   Timestamp ts = news["timestamp"];
-                  String formattedDate = "";
-
-                  if (ts != null) {
-                    formattedDate = DateFormat("EEE, dd MMM yyyy").format(ts.toDate());
-                  }
+                  String formattedDate = DateFormat("EEE, dd MMM yyyy").format(ts.toDate());
 
                   return GestureDetector(
                     onTap: () {

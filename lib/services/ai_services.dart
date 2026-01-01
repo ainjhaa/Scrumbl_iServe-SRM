@@ -1,6 +1,5 @@
 // services/ai_service.dart - HYBRID SYSTEM
 import 'dart:convert';
-import 'dart:math';
 import 'package:http/http.dart' as http;
 
 class AIService {
@@ -195,9 +194,10 @@ class AIService {
     return null;
   }
   
-  /// Check if message matches a knowledge base key
+  /// Check if message matches a knowledge base key - currently unused
+  /// but kept for potential future use
+  /*
   static bool _matchesQuestion(String message, String key) {
-    final words = message.split(' ');
     final keyWords = key.split(' ');
     
     // Check if all key words appear in the message
@@ -211,6 +211,7 @@ class AIService {
     // If at least 50% of key words match
     return matches >= (keyWords.length / 2).ceil();
   }
+  */
   
   /// Try Gemini AI as fallback
   static Future<String> _tryGeminiAI(String message) async {

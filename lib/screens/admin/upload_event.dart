@@ -249,7 +249,7 @@ class _UploadEventState extends State<UploadEvent> {
                     width: 10.0,
                   ),
                   Text(
-                    DateFormat('yyyy-MM-dd').format(selectedDate!),
+                    DateFormat('yyyy-MM-dd').format(selectedDate),
                     style: TextStyle(
                         color: Colors.black,
                         fontSize: 22.0,
@@ -271,7 +271,7 @@ class _UploadEventState extends State<UploadEvent> {
                     width: 10.0,
                   ),
                   Text(
-                    formatTimeOfDay(selectedTime!),
+                    formatTimeOfDay(selectedTime),
                     style: TextStyle(
                         color: Colors.black,
                         fontSize: 22.0,

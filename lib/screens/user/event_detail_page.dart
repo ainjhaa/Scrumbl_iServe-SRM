@@ -3,8 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:demo_app/services/shared_pref.dart';
+import 'package:demo_app/services/program_receipt_service.dart';
 
 class EDetailPage extends StatefulWidget {
   final String eventId;
@@ -23,6 +23,7 @@ class _EDetailPageState extends State<EDetailPage> {
   String? userId;
   String? userName;
   bool loadingUser = true;
+  bool isRegistered = false;
 
   @override
   void initState() {
@@ -34,9 +35,30 @@ class _EDetailPageState extends State<EDetailPage> {
   Future<void> loadUserInfo() async {
     userId = await SharedpreferenceHelper().getUserId();
     userName = await SharedpreferenceHelper().getUserName();
+    if (userId != null) {
+      await checkRegistration();
+    }
     setState(() {
       loadingUser = false;
     }); // rebuild UI after loading
+  }
+
+  // Check if user is already registered for this event
+  Future<void> checkRegistration() async {
+    if (userId == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(userId)
+          .collection("RegisteredEvents")
+          .doc(widget.eventId)
+          .get();
+      setState(() {
+        isRegistered = doc.exists;
+      });
+    } catch (e) {
+      print("Error checking registration: $e");
+    }
   }
 
   @override
@@ -184,43 +206,60 @@ class _EDetailPageState extends State<EDetailPage> {
                             color: Color(0xff6351ec),
                             fontWeight: FontWeight.bold)),
                     SizedBox(width: 20),
-                    GestureDetector(
-                      onTap: () {
-
-                        if (userId == null || userName == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("User information not loaded. Please try again.")),
-                          );
-                          return;
-                        }
-                        // Pass user info to PaymentPage
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => PaymentPage(
-                              eventId: widget.eventId,
-                              userId: userId!,
-                              userName: userName!,
-                              amount: total.toString(),
-                            ),
-                          ),
-                        );
-                      },
-                      child: Container(
+                    if (isRegistered)
+                      Container(
                         width: 150,
                         height: 50,
                         decoration: BoxDecoration(
-                            color: Color(0xff6351ec),
+                            color: Colors.grey,
                             borderRadius: BorderRadius.circular(10)),
                         child: Center(
-                          child: Text("Book Now",
+                          child: Text("REGISTERED",
                               style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 22,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold)),
                         ),
-                      ),
-                    )
+                      )
+                    else
+                      GestureDetector(
+                        onTap: () {
+                          if (userId == null || userName == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("User information not loaded. Please try again.")),
+                            );
+                            return;
+                          }
+                          // Pass user info to PaymentPage
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PaymentPage(
+                                eventId: widget.eventId,
+                                userId: userId!,
+                                userName: userName!,
+                                amount: total.toString(),
+                              ),
+                            ),
+                          ).then((_) {
+                            checkRegistration();
+                          });
+                        },
+                        child: Container(
+                          width: 150,
+                          height: 50,
+                          decoration: BoxDecoration(
+                              color: Color(0xff6351ec),
+                              borderRadius: BorderRadius.circular(10)),
+                          child: Center(
+                            child: Text("Book Now",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      )
                   ]),
                 ),
               ],
@@ -296,6 +335,16 @@ class _PaymentPageState extends State<PaymentPage> {
 
       String pdfUrl = await storageRef.getDownloadURL();
 
+      // 🔹 Fetch event details for receipt generation
+      final eventDoc = await FirebaseFirestore.instance
+          .collection("Event")
+          .doc(widget.eventId)
+          .get();
+
+      final eventName = eventDoc['Name'] ?? "Unknown Event";
+      final eventDate = eventDoc['Date'] ?? "N/A";
+      final eventLocation = eventDoc['Location'] ?? "N/A";
+
       // 🔹 Payment data map
       Map<String, dynamic> paymentData = {
         "userId": widget.userId,
@@ -324,10 +373,36 @@ class _PaymentPageState extends State<PaymentPage> {
         "eventId": widget.eventId,
       });
 
+      // 🔹 Create registration record in Users/{userId}/RegisteredEvents/{eventId}
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(widget.userId)
+          .collection("RegisteredEvents")
+          .doc(widget.eventId)
+          .set({
+        "eventId": widget.eventId,
+        "registrationDate": FieldValue.serverTimestamp(),
+        "status": "registered",
+      });
+
+      // 🔹 Generate and save program fee receipt
+      final programReceiptService = ProgramReceiptService();
+      await programReceiptService.generateProgramReceipt(
+        userId: widget.userId,
+        userName: widget.userName,
+        userEmail: "", // Will be fetched from user data
+        eventId: widget.eventId,
+        eventName: eventName,
+        eventDate: eventDate,
+        eventLocation: eventLocation,
+        amount: double.parse(widget.amount),
+        uploadedReceiptUrl: pdfUrl,
+      );
+
       setState(() => uploading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Receipt uploaded successfully!")),
+        SnackBar(content: Text("Registration successful! Receipt generated and saved.")),
       );
 
       Navigator.pop(context);

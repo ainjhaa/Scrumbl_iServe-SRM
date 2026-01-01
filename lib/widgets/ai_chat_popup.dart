@@ -104,15 +104,6 @@ class _AIChatPopupState extends State<AIChatPopup> {
     }
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-
   Widget _buildMessageBubble(Map<String, dynamic> message) {
     final isUser = message["sender"] == "user";
     final isError = message["isError"] == true;

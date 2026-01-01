@@ -56,7 +56,7 @@ class EventReport extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           itemCount: events.length,
           itemBuilder: (context, index) {
-            final event = events[index].data() as Map<String, dynamic>;
+            final event = events[index].data();
 
             final name = event["Name"] ?? "Unknown Event";
             final date = event["Date"] ?? "-";
@@ -183,7 +183,7 @@ class UserReport extends StatelessWidget {
 
             // Show Top 3
             ...users.take(3).map((user) {
-              final data = user.data() as Map<String, dynamic>;
+              final data = user.data();
 
               return Card(
                 color: Colors.yellow.shade100,
@@ -208,7 +208,7 @@ class UserReport extends StatelessWidget {
 
             // List all users
             ...users.map((user) {
-              final data = user.data() as Map<String, dynamic>;
+              final data = user.data();
 
               return Card(
                 elevation: 2,

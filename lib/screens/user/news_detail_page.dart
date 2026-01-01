@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class NewsDetailPage extends StatelessWidget {
   final Map<String, dynamic> news;
@@ -14,7 +13,6 @@ class NewsDetailPage extends StatelessWidget {
     final String image = news["image"] ?? "";
     final String tag = news["tag"] ?? "General";
     final String location = news["location"] ?? "";
-    final String id = news["id"] ?? "";
 
     // Convert Firebase Timestamp → Readable Date
     final timestamp = news["timestamp"];
@@ -182,45 +180,5 @@ class NewsDetailPage extends StatelessWidget {
     );
   }
 
-  /// CONFIRMATION DIALOG
-  void _showDeleteConfirmation(BuildContext context, String docId) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Delete News"),
-        content: const Text("Are you sure you want to delete this news permanently?"),
-        actions: [
-          TextButton(
-            child: const Text("Cancel"),
-            onPressed: () => Navigator.pop(context),
-          ),
-
-          TextButton(
-            child: const Text(
-              "Delete",
-              style: TextStyle(color: Colors.red),
-            ),
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              _deleteNews(context, docId);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// DELETE FUNCTION
-  void _deleteNews(BuildContext context, String docId) async {
-    await FirebaseFirestore.instance
-        .collection("news")
-        .doc(docId)
-        .delete();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("News deleted successfully")),
-    );
-
-    Navigator.pop(context); // GO BACK after deleting
-  }
+  /// CONFIRMATION DIALOG - currently unused but kept for potential future use
 }

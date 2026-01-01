@@ -9,15 +9,11 @@ class ListEventsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       appBar: AppBar(
         title: const Text("Events List"),
       ),
-
       body: Column(
         children: [
-
-          // 🔹 Real-time Event List
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -28,20 +24,25 @@ class ListEventsPage extends StatelessWidget {
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
-
-                final events = snapshot.data!.docs;
-
+                final now = DateTime.now();
+                final events = snapshot.data!.docs.where((doc) {
+                  final dateStr = doc['Date'];
+                  try {
+                    final eventDate = DateTime.parse(dateStr);
+                    return eventDate.isAfter(now);
+                  } catch (_) {
+                    return false;
+                  }
+                }).toList();
                 if (events.isEmpty) {
-                  return const Center(child: Text("No events available."));
+                  return const Center(child: Text("No upcoming events."));
                 }
-
                 return ListView.builder(
                   padding: const EdgeInsets.all(15),
                   itemCount: events.length,
                   itemBuilder: (context, index) {
                     final data = events[index];
                     final eventName = data['Name'] ?? "Unnamed Event";
-
                     return Card(
                       elevation: 3,
                       margin: const EdgeInsets.symmetric(vertical: 10),
