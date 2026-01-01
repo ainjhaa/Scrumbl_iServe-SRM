@@ -187,7 +187,9 @@ class EventReport extends StatelessWidget {
                                         children: [
                                           const Icon(Icons.location_on, size: 16, color: Colors.grey),
                                           const SizedBox(width: 6),
-                                          Text(location),
+                                          Text(location, 
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 2,),
                                         ],
                                       ),
                                       Row(
@@ -557,18 +559,22 @@ class _UsersList extends StatelessWidget {
             final userName = userData["name"]?.toString() ?? "Unknown User";
             final userEmail = userData["email"]?.toString() ?? userData["Email"]?.toString() ?? "No Email";
             final userRole = userData["role"]?.toString() ?? "user";
-
+            
             return Card(
               margin: const EdgeInsets.only(bottom: 10),
               elevation: 2,
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: userRole == "Admin" 
-                      ? Colors.red[100] 
-                      : Colors.blue[100],
+                  backgroundColor: switch(userRole){ 
+                                    "Admin" => Colors.red[100],
+                                    "Member"=> Colors.blue[100],
+                                    _ => Colors.yellow[100],},
                   child: Icon(
                     userRole == "Admin" ? Icons.admin_panel_settings : Icons.person,
-                    color: userRole == "Admin" ? Colors.red : Colors.blue,
+                    color: switch(userRole){ 
+                            "Admin" => Colors.red,
+                            "Member"=> Colors.blue,
+                            _ => Colors.orange,}
                   ),
                 ),
                 title: Text(
@@ -592,15 +598,21 @@ class _UsersList extends StatelessWidget {
                         Container(
                           padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: userRole == "Admin" ? Colors.red[50] : Colors.blue[50],
+                            color: switch(userRole){ 
+                                "Admin" => Colors.red[50],
+                                "Member"=> Colors.blue[50],
+                                _ => Colors.yellow[50],},
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            userRole.toUpperCase(),
+                            userRole != "Admin" ? userRole.toUpperCase() : "COMMITTEE",
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: userRole == "Admin" ? Colors.red[700] : Colors.blue[700],
+                              color: switch(userRole){ 
+                                "Admin" => Colors.red[700],
+                                "Member"=> Colors.blue[700],
+                                _ => Colors.orange[700],}
                             ),
                           ),
                         ),

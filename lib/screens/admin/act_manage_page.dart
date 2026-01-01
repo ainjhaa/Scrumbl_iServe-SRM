@@ -157,8 +157,7 @@ class _ActivityPageState extends State<ActivityPage> {
               },
               child: Column(
                 children: [
-                  Container(
-                    
+                  Container(                    
                     width: MediaQuery.of(context).size.width,
                     child: Stack(
                       children: [
@@ -201,25 +200,37 @@ class _ActivityPageState extends State<ActivityPage> {
                   Row(           
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      Expanded(child: Text(
                         ds["Name"],
                         style: TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.bold),
-                      ),
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                            maxLines:2, overflow:TextOverflow.fade,
+                      ),),
                     ],
                   ),
 
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start, // 🔑 align icon to first line
                     children: [
-                      Icon(Icons.location_on),
-                      Text(
-                        ds["Location"],
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.w500),
+                      const Icon(
+                        Icons.location_on,
+                        size: 18,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded( // 🔑 prevents overflow
+                        child: Text(
+                          ds["Location"],
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
-
                   SizedBox(height: 20),
                 ],
               ),
