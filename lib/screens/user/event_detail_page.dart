@@ -4,7 +4,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:demo_app/services/shared_pref.dart';
 import 'package:demo_app/services/program_receipt_service.dart';
 
 class EDetailPage extends StatefulWidget {
@@ -505,7 +504,6 @@ class _PaymentPageState extends State<PaymentPage> {
       final eventName = eventDoc['Name'] ?? "Unknown Event";
       final eventDate = eventDoc['Date'] ?? "N/A";
       final eventLocation = eventDoc['Location'] ?? "N/A";
-      final eventPrice = eventDoc['Price']?.toString() ?? widget.amount;
 
       // 🔹 Fetch user email from database
       final userDoc = await FirebaseFirestore.instance

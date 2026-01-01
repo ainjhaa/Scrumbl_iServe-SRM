@@ -94,14 +94,33 @@ class _ReceiptHistoryPageState extends State<ReceiptHistoryPage> {
         }
 
         final allReceipts = snapshot.data ?? [];
-        // ✅ Include all receipts - both paid and free programs, but exclude membership templates
+        
+        // ✅ Apply additional filtering based on filter type
         final receipts = allReceipts.where((receipt) {
-          // Include paid receipts and program fee receipts (even with amount 0)
-          if (receipt.receiptType == 'program_fee') {
-            return true; // Include all program fee receipts
+          // If "All" is selected, include all receipts except membership templates (amount <= 0)
+          if (_filterType == 'all') {
+            // Include all program_fee receipts (even with amount 0)
+            if (receipt.receiptType == 'program_fee') {
+              return true;
+            }
+            // For membership, only include if amount > 0 (exclude templates)
+            if (receipt.receiptType == 'membership') {
+              return receipt.amount > 0;
+            }
+            return true;
           }
-          // For other types (membership), only include if amount > 0
-          return receipt.amount > 0;
+          
+          // If "Membership" is selected, include membership receipts with amount > 0
+          if (_filterType == 'membership') {
+            return receipt.receiptType == 'membership' && receipt.amount > 0;
+          }
+          
+          // If "Program Fee" is selected, include all program_fee receipts (even with amount 0)
+          if (_filterType == 'program_fee') {
+            return receipt.receiptType == 'program_fee';
+          }
+          
+          return true;
         }).toList();
 
         if (receipts.isEmpty) {
