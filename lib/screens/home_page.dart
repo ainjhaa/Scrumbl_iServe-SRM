@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:demo_app/screens/user/my_activities_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../widgets/ai_chat_popup.dart';
@@ -163,7 +164,7 @@ class _HomePageState extends State<HomePage> {
                     icon: Icons.track_changes,
                     label: "My Activities\n",
                     color: Colors.green,
-                    destination: PlaceholderPage("Events"),
+                    destination: MyActivitiesPage(),
                   ),
                   SizedBox(width: 10),
                   LockedNavButton(
