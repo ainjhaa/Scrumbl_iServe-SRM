@@ -251,24 +251,28 @@ class _EDetailPageState extends State<EDetailPage> {
                             print('Error fetching user name: $e');
                             actualUserName = 'User';
                           }
-    
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => PaymentPage(
-                                eventId: widget.eventId,
-                                userId: user.uid,
-                                userName: actualUserName,
-                                amount: price.toString(),
-                                eventName: name,
-                                eventDate: date,
-                                eventLocation: location,
-                                eventPrice: price.toString(),
+                           if (price == 0) {
+                            // 🆓 FREE EVENT
+                            registerFreeEvent();
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PaymentPage(
+                                  eventId: widget.eventId,
+                                  userId: user.uid,
+                                  userName: actualUserName,
+                                  amount: price.toString(),
+                                  eventName: name,
+                                  eventDate: date,
+                                  eventLocation: location,
+                                  eventPrice: price.toString(),
+                                ),
                               ),
-                            ),
-                          ).then((_) {
-                            checkRegistration();
-                          });
+                            ).then((_) {
+                              checkRegistration();
+                            });
+                          }
                         },
                         child: Container(
                           width: 150,
@@ -340,7 +344,7 @@ class _EDetailPageState extends State<EDetailPage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text("Successfully registered for free event 🎉"),
+        content: Text("Successfully registered 🎉"),
         backgroundColor: Colors.green,
       ),
     );
