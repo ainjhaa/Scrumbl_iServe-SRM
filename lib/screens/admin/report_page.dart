@@ -184,12 +184,15 @@ class EventReport extends StatelessWidget {
                                         ],
                                       ),
                                       Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           const Icon(Icons.location_on, size: 16, color: Colors.grey),
                                           const SizedBox(width: 6),
-                                          Text(location, 
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 2,),
+                                          Expanded( 
+                                            child: Text(location, 
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 3,
+                                          ),),
                                         ],
                                       ),
                                       Row(
