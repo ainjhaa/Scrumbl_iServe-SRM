@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:demo_app/services/shared_pref.dart';
@@ -11,35 +12,77 @@ class MyActivitiesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final User? currentUser = FirebaseAuth.instance.currentUser;
+    
+    if (currentUser == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("My Activities")),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.login, size: 60, color: Colors.grey),
+              SizedBox(height: 20),
+              Text("Please log in to view your activities"),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final userId = currentUser.uid;
+    
+    // Debug: Verify we're using the correct user
+    print('🔍 MyActivities - User ID: $userId');
+  
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("My Activities"),
-      ),
-      body: FutureBuilder<String?>(
-        future: SharedpreferenceHelper().getUserId(),
+      appBar: AppBar(title: const Text("My Activities")),
+      body: StreamBuilder<DocumentSnapshot>(
+        // First get user document to check role
+        stream: FirebaseFirestore.instance
+          .collection("users")
+          .doc(userId)
+          .snapshots(),
         builder: (context, userSnapshot) {
-          if (!userSnapshot.hasData || userSnapshot.data == null) {
-            return const Center(child: Text("Please log in to view your activities."));
+          if (!userSnapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
           }
-
-          final userId = userSnapshot.data!;
-
+        
+          final userRole = userSnapshot.data!['role'] ?? 'Volunteer';
+          print('🔍 User Role: $userRole');
+        
+          // Now get registered events
           return StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
-                .collection("users")
-                .doc(userId)
-                .collection("RegisteredEvents")
-                .snapshots(),
+              .collection("users")
+              .doc(userId)
+              .collection("RegisteredEvents")
+              .snapshots(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              final registeredEventDocs = snapshot.data!.docs;
+            final registeredEventDocs = snapshot.data!.docs;
+            
+            // Debug: Show what events we found
+            print('🔍 Found ${registeredEventDocs.length} registered events');
+            for (final doc in registeredEventDocs) {
+              print('   - Event ID: ${doc.id}');
+            }
 
-              if (registeredEventDocs.isEmpty) {
-                return const Center(child: Text("You haven't registered for any activities yet."));
-              }
+            if (registeredEventDocs.isEmpty) {
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.event_note, size: 60, color: Colors.grey),
+                    SizedBox(height: 20),
+                    Text("You haven't registered for any activities yet."),
+                  ],
+                ),
+              );
+            }
 
               return ListView.builder(
                 padding: const EdgeInsets.all(15),
