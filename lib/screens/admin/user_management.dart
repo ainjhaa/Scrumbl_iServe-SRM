@@ -413,7 +413,7 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Change User Status"),
+        title: const Text("Change User Role"),
         content: DropdownButtonFormField<String>(
           value: selectedStatus,
           items: const [
@@ -431,17 +431,21 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
             onPressed: () async {
               if (selectedStatus == null) return;
 
+              // Update User Role
               await FirebaseFirestore.instance
                   .collection("users")
                   .doc(userId)
                   .update({"role": selectedStatus});
 
-              if (currentStatus == "Volunteer" &&
-                selectedStatus == "Member") {
-                await NotificationService.sendMemberWelcome(
-                  userId: userId,
-                );
+              if (currentStatus == "Member" && selectedStatus == "Volunteer") {
+                // Delete membership application records
+                await _resetMembershipStatus(userId);
               }
+
+              if (currentStatus == "Volunteer" && selectedStatus == "Member") {
+              await _approveMembership(userId);
+              await NotificationService.sendMemberWelcome(userId: userId);
+            }
 
               Navigator.pop(context);
               setState(() {});
@@ -457,5 +461,64 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
         ],
       ),
     );
+  }
+
+  /// Reset membership status when member is changed to volunteer
+  Future<void> _resetMembershipStatus(String userId) async {
+    try {
+      // Delete from membership_requests collection
+      await FirebaseFirestore.instance
+        .collection('membership_requests')
+        .doc(userId)
+        .delete();
+
+      // Delete from registrations collection
+      await FirebaseFirestore.instance
+        .collection('registrations')
+        .doc(userId)
+        .delete();
+
+      print('✅ Membership status reset for user: $userId');
+    } catch (e) {
+      print('❌ Error resetting membership status: $e');
+    }
+  }
+
+  /// Approve membership when volunteer is changed to member
+  Future<void> _approveMembership(String userId) async {
+    try {
+      final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+      
+        final membershipData = {
+          'uid': userId,
+          'email': userData['email'] ?? '',
+          'name': userData['name'] ?? 'User',
+          'status': 'approved',
+          'approvedAt': FieldValue.serverTimestamp(),
+          'approvedBy': 'Admin (Manual Role Change)',
+        };
+
+        // Create membership records
+        await FirebaseFirestore.instance
+          .collection('membership_requests')
+          .doc(userId)
+          .set(membershipData);
+
+        await FirebaseFirestore.instance
+          .collection('registrations')
+          .doc(userId)
+          .set(membershipData);
+
+        print('✅ Membership auto-approved for user: $userId');
+      }
+    } catch (e) {
+      print('❌ Error approving membership: $e');
+    }
   }
 }
