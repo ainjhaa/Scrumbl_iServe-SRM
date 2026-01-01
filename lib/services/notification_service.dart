@@ -41,7 +41,7 @@ class NotificationService {
         FirebaseFirestore.instance.collection("notifications").doc(),
         {
           "userId": doc.id,
-          "title": "New $tag",
+          "title": "📰 New $tag",
           "message": "A new \"$newsTitle\" has just been published. Check it out!",
           "type": "news",
           "targetRoute": "/news", // optional: redirect to news page
