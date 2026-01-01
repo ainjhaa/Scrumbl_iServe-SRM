@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:demo_app/screens/user/my_activities_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../widgets/ai_chat_popup.dart';
@@ -7,11 +6,11 @@ import '../widgets/info_section.dart';
 import 'notification_page.dart';
 import 'profile_page.dart';
 import 'membership_page.dart';
-import 'placeholder_page.dart';
 import '../widgets/membership_card.dart';
 import '../widgets/nav_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'user/list_events_page.dart';
+import 'user/my_activities_page.dart';
 import 'package:demo_app/widgets/user_news_carousel.dart';
 
 class HomePage extends StatefulWidget {
