@@ -137,18 +137,19 @@ class ProgramReceiptService {
   }
 
   /// Retrieve program receipts for a user
+  /// Retrieve program receipts for a user (filters in app to avoid composite index)
   Future<List<Receipt>> getUserProgramReceipts(String userId) async {
     try {
       final snapshot = await _firestore
           .collection('users')
           .doc(userId)
           .collection('receipts')
-          .where('receiptType', isEqualTo: 'program_fee')
           .orderBy('paymentDate', descending: true)
           .get();
 
       return snapshot.docs
           .map((doc) => Receipt.fromMap(doc.data()))
+          .where((receipt) => receipt.receiptType == 'program_fee')
           .toList();
     } catch (e) {
       print('Error retrieving program receipts: $e');
@@ -175,18 +176,18 @@ class ProgramReceiptService {
     }
   }
 
-  /// Stream of all program receipts for a user (for real-time updates)
+  /// Stream of all program receipts for a user (filters in app to avoid composite index)
   Stream<List<Receipt>> getUserProgramReceiptsStream(String userId) {
     return _firestore
         .collection('users')
         .doc(userId)
         .collection('receipts')
-        .where('receiptType', isEqualTo: 'program_fee')
         .orderBy('paymentDate', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
           .map((doc) => Receipt.fromMap(doc.data()))
+          .where((receipt) => receipt.receiptType == 'program_fee')
           .toList();
     });
   }

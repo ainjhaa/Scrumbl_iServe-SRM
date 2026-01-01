@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:demo_app/services/shared_pref.dart';
 import 'package:demo_app/services/program_receipt_service.dart';
 import 'package:demo_app/models/receipt.dart';
 import 'package:url_launcher/url_launcher.dart';

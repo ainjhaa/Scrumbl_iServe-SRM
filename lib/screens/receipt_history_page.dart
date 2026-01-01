@@ -94,8 +94,34 @@ class _ReceiptHistoryPageState extends State<ReceiptHistoryPage> {
         }
 
         final allReceipts = snapshot.data ?? [];
-        // Filter out receipts with amount 0 (usually generated templates)
-        final receipts = allReceipts.where((receipt) => receipt.amount > 0).toList();
+        
+        // ✅ Apply additional filtering based on filter type
+        final receipts = allReceipts.where((receipt) {
+          // If "All" is selected, include all receipts except membership templates (amount <= 0)
+          if (_filterType == 'all') {
+            // Include all program_fee receipts (even with amount 0)
+            if (receipt.receiptType == 'program_fee') {
+              return true;
+            }
+            // For membership, only include if amount > 0 (exclude templates)
+            if (receipt.receiptType == 'membership') {
+              return receipt.amount > 0;
+            }
+            return true;
+          }
+          
+          // If "Membership" is selected, include membership receipts with amount > 0
+          if (_filterType == 'membership') {
+            return receipt.receiptType == 'membership' && receipt.amount > 0;
+          }
+          
+          // If "Program Fee" is selected, include all program_fee receipts (even with amount 0)
+          if (_filterType == 'program_fee') {
+            return receipt.receiptType == 'program_fee';
+          }
+          
+          return true;
+        }).toList();
 
         if (receipts.isEmpty) {
           return Center(

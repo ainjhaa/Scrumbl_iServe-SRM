@@ -110,17 +110,18 @@ class ReceiptUploadService {
   }
 
   /// Get receipts by type (membership or program_fee)
+  /// Note: Filtering is done in the app to avoid composite index requirement
   Stream<List<Receipt>> getUserReceiptsByType(String userId, String receiptType) {
     return _firebaseFirestore
         .collection('users')
         .doc(userId)
         .collection('receipts')
-        .where('receiptType', isEqualTo: receiptType)
         .orderBy('generatedAt', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
           .map((doc) => Receipt.fromMap(doc.data()))
+          .where((receipt) => receipt.receiptType == receiptType)
           .toList();
     });
   }
