@@ -19,24 +19,75 @@ class _WrapperState extends State<Wrapper> {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
+        // Handle connection state
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
         // Not logged in
-        if (!snapshot.hasData) return const LoginPage();
+        if (!snapshot.hasData) {
+          return const LoginPage();
+        }
+
+        // User is logged in
         final uid = snapshot.data!.uid;
 
-        if (snapshot.hasData) {
-          return StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .snapshots(),
-            builder: (context, userSnapshot) {
-              if (!userSnapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .snapshots(),
+          builder: (context, userSnapshot) {
+            // Handle loading state
+            if (userSnapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            // Handle error state
+            if (userSnapshot.hasError) {
+              return Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 60,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Error loading user data'),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {});
+                        },
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            // Check if user document exists
+            if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+              // User document doesn't exist, redirect to home
+              return const HomePage();
+            }
+
+            try {
+              final data = userSnapshot.data!.data() as Map<String, dynamic>?;
+              
+              if (data == null) {
+                return const HomePage();
               }
 
-              final data = userSnapshot.data!.data() as Map<String, dynamic>;
-              final role = data['role'];
+              final role = data['role'] as String?;
 
               if (role == 'Admin') {
                 return const AdminPage();
@@ -45,26 +96,14 @@ class _WrapperState extends State<Wrapper> {
               } else {
                 return const HomePage();
               }
-            },
-          );
-            
-        }else{
-          return LoginPage();
-        }
+            } catch (e) {
+              // Handle casting errors
+              print('Error parsing user data: $e');
+              return const HomePage();
+            }
+          },
+        );
       },
     );
   }
-  /*Widget build(BuildContext context) {
-    return Scaffold(
-      body: StreamBuilder(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot){
-          if (snapshot.hasData) {
-            return HomePage();
-          }else{
-            return LoginPage();
-          }
-        }),
-    );
-  }*/
 }

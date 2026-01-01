@@ -51,9 +51,12 @@ dependencies:
   random_string:
   intl: ^0.18.0
   flutter_stripe: 
-  http:
+  http: ^1.6.0
   geolocator: 
   geocoding: 
+  flutter_dotenv: ^6.0.0
+  printing: ^5.11.3
+  path_provider: ^2.1.1
 
 dev_dependencies:
   flutter_test:

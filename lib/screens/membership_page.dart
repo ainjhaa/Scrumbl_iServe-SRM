@@ -4,6 +4,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:demo_app/services/receipt_generation_service.dart';
+import 'package:demo_app/services/receipt_upload_service.dart';
+import 'package:demo_app/models/receipt.dart';
 
 class MembershipPage extends StatefulWidget {
   const MembershipPage({super.key});
@@ -37,51 +40,150 @@ class _MembershipPageState extends State<MembershipPage> {
   Future uploadFile() async {
     if (pickedFile == null) return;
 
-    final user = FirebaseAuth.instance.currentUser!;
-    final file = File(pickedFile!.path!);
-    final path = 'registrations/${user.uid}/${pickedFile!.name}';
-    final ref = FirebaseStorage.instance.ref().child(path);
+    try {
+      final user = FirebaseAuth.instance.currentUser!;
+      final file = File(pickedFile!.path!);
+      final path = 'registrations/${user.uid}/${pickedFile!.name}';
+      final ref = FirebaseStorage.instance.ref().child(path);
 
-    setState(() {
-      uploadTask = ref.putFile(file);
-    });
+      setState(() {
+        uploadTask = ref.putFile(file);
+      });
 
-    final snapshot = await uploadTask!.whenComplete(() {});
-    final urlDownload = await snapshot.ref.getDownloadURL();
+      final snapshot = await uploadTask!.whenComplete(() {});
+      final urlDownload = await snapshot.ref.getDownloadURL();
 
-    final userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    String name = userDoc['name'];
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      String name = userDoc['name'];
+      String email = userDoc['email'] ?? user.email ?? '';
 
-    final registrationData = {
-      'uid': user.uid,
-      'email': user.email,
-      'name': name,
-      'fileName': pickedFile!.name,
-      'fileUrl': urlDownload,
-      'uploadedAt': FieldValue.serverTimestamp(),
-      'status': 'pending',
-    };
+      final registrationData = {
+        'uid': user.uid,
+        'email': user.email,
+        'name': name,
+        'fileName': pickedFile!.name,
+        'fileUrl': urlDownload,
+        'uploadedAt': FieldValue.serverTimestamp(),
+        'status': 'pending',
+      };
 
-    // Save to volunteer's collection
-    await FirebaseFirestore.instance
-        .collection('registrations')
-        .doc(user.uid)
-        .set(registrationData);
+      // Save to volunteer's collection
+      await FirebaseFirestore.instance
+          .collection('registrations')
+          .doc(user.uid)
+          .set(registrationData);
 
-    // Save to admin collection for approval
-    await FirebaseFirestore.instance
-        .collection('membership_requests')
-        .doc(user.uid)
-        .set(registrationData);
+      // Save to admin collection for approval
+      await FirebaseFirestore.instance
+          .collection('membership_requests')
+          .doc(user.uid)
+          .set(registrationData);
 
-    setState(() => uploadTask = null);
+      // Generate and upload receipt
+      await _generateAndUploadReceipt(
+        userId: user.uid,
+        userName: name,
+        userEmail: email,
+        fileName: pickedFile!.name,
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("File uploaded successfully!")),
-    );
+      setState(() => uploadTask = null);
 
-    print('Download Link: $urlDownload');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("File uploaded successfully! Receipt generated."),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      print('Download Link: $urlDownload');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error uploading file: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      print('Error: $e');
+    }
+  }
+
+  Future<void> _generateAndUploadReceipt({
+    required String userId,
+    required String userName,
+    required String userEmail,
+    required String fileName,
+  }) async {
+    try {
+      final receiptService = ReceiptUploadService();
+      final transactionId = _generateNumericId();
+      final now = DateTime.now();
+
+      // Create receipt object with fixed RM10 membership fee
+      final receipt = Receipt(
+        id: _generateNumericId(),
+        userId: userId,
+        userName: userName,
+        userEmail: userEmail,
+        receiptType: 'membership',
+        amount: 10.0, // Fixed membership fee RM10
+        paymentDate: now,
+        paymentMethod: 'QR Payment',
+        transactionId: transactionId,
+        status: 'pending', // Pending admin approval
+        details: {
+          'Document Name': fileName,
+          'Registration Type': 'Club Membership Application',
+          'Fee Type': 'Membership Registration',
+          'Status': 'Awaiting Admin Approval',
+        },
+        pdfUrl: '',
+        generatedAt: now,
+      );
+
+      // Generate PDF
+      final pdfFile =
+          await ReceiptGenerationService.generateReceiptPDF(receipt);
+
+      // Upload PDF and save receipt to Firestore
+      final uploadedReceipt = await receiptService.createAndUploadReceipt(
+        userId: userId,
+        userName: userName,
+        userEmail: userEmail,
+        receiptType: 'membership',
+        amount: 10.0, // Fixed membership fee
+        paymentMethod: 'QR Payment',
+        transactionId: transactionId,
+        status: 'pending',
+        details: {
+          'Document Name': fileName,
+          'Registration Type': 'Club Membership Application',
+          'Fee Type': 'Membership Registration',
+          'Status': 'Awaiting Admin Approval',
+        },
+        pdfFile: pdfFile,
+        receiptId: receipt.id,
+      );
+
+      // Delete temporary PDF file
+      await pdfFile.delete().catchError((_) => pdfFile);
+
+      print('Receipt generated and uploaded: ${uploadedReceipt.id}');
+    } catch (e) {
+      print('Error generating receipt: $e');
+      // Don't fail the registration if receipt generation fails
+    }
+  }
+
+  /// Generate numeric-only ID (no symbols)
+  String _generateNumericId() {
+    return DateTime.now().millisecondsSinceEpoch.toString() +
+        (DateTime.now().microsecond % 1000).toString();
   }
 
   Widget buildUploadSection() {
