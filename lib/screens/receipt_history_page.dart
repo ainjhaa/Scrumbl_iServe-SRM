@@ -93,7 +93,9 @@ class _ReceiptHistoryPageState extends State<ReceiptHistoryPage> {
           );
         }
 
-        final receipts = snapshot.data ?? [];
+        final allReceipts = snapshot.data ?? [];
+        // Filter out receipts with amount 0 (usually generated templates)
+        final receipts = allReceipts.where((receipt) => receipt.amount > 0).toList();
 
         if (receipts.isEmpty) {
           return Center(

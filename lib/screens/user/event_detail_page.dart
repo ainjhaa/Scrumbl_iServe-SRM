@@ -373,6 +373,30 @@ class _PaymentPageState extends State<PaymentPage> {
         "eventId": widget.eventId,
       });
 
+      // 🔹 Store user-uploaded receipt in program_receipts collection
+      await FirebaseFirestore.instance
+          .collection("program_receipts")
+          .doc(widget.eventId)
+          .collection("payments")
+          .doc(widget.userId)
+          .set({
+        ...paymentData,
+        "eventId": widget.eventId,
+        "receiptType": "program_fee",
+      });
+
+      // 🔹 Also store in user's program_receipts subcollection
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(widget.userId)
+          .collection("program_receipts")
+          .doc(widget.eventId)
+          .set({
+        ...paymentData,
+        "eventId": widget.eventId,
+        "receiptType": "program_fee",
+      });
+
       // 🔹 Create registration record in Users/{userId}/RegisteredEvents/{eventId}
       await FirebaseFirestore.instance
           .collection("users")

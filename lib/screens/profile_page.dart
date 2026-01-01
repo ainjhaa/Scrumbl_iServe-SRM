@@ -31,6 +31,10 @@ class _ProfilePageState extends State<ProfilePage> {
     if (user != null) {
       // Generate receipt for membership registration if it doesn't exist
       await ReceiptSyncService.generateMembershipRegistrationReceipt(user.uid);
+      
+      // Delete any RM0 (zero amount) membership receipts
+      final receiptService = ReceiptUploadService();
+      await receiptService.deleteZeroAmountMembershipReceipts(user.uid);
     }
   }
 

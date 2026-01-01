@@ -175,4 +175,38 @@ class ReceiptUploadService {
       throw Exception('Failed to update receipt status: $e');
     }
   }
+
+  /// Delete all membership receipts with amount 0 (RM0)
+  Future<void> deleteZeroAmountMembershipReceipts(String userId) async {
+    try {
+      // Get all membership receipts with RM0
+      final snapshot = await _firebaseFirestore
+          .collection('users')
+          .doc(userId)
+          .collection('receipts')
+          .where('receiptType', isEqualTo: 'membership')
+          .where('amount', isEqualTo: 0)
+          .get();
+
+      // Delete each receipt from user's collection
+      for (var doc in snapshot.docs) {
+        await _firebaseFirestore
+            .collection('users')
+            .doc(userId)
+            .collection('receipts')
+            .doc(doc.id)
+            .delete();
+
+        // Also delete from global receipts collection
+        await _firebaseFirestore
+            .collection('receipts')
+            .doc(doc.id)
+            .delete();
+      }
+
+      print('Deleted ${snapshot.docs.length} RM0 membership receipts for user $userId');
+    } catch (e) {
+      print('Error deleting RM0 membership receipts: $e');
+    }
+  }
 }
