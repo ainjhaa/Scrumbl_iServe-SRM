@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:demo_app/services/shared_pref.dart';
@@ -32,16 +33,39 @@ class _EDetailPageState extends State<EDetailPage> {
   }
 
   // Fetch user info from shared preferences
-  Future<void> loadUserInfo() async {
-    userId = await SharedpreferenceHelper().getUserId();
-    userName = await SharedpreferenceHelper().getUserName();
-    if (userId != null) {
-      await checkRegistration();
+  // In event_detail_page.dart - Replace loadUserInfo():
+Future<void> loadUserInfo() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please log in first")),
+      );
+      Navigator.pop(context);
     }
-    setState(() {
-      loadingUser = false;
-    }); // rebuild UI after loading
+    return;
   }
+  
+  userId = user.uid;
+  
+  // Get user name from Firestore
+  try {
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+    
+    userName = userDoc['name'] ?? user.displayName ?? 'User';
+  } catch (e) {
+    userName = user.displayName ?? 'User';
+  }
+  
+  await checkRegistration();
+  
+  setState(() {
+    loadingUser = false;
+  });
+}
 
   // Check if user is already registered for this event
   Future<void> checkRegistration() async {
@@ -94,7 +118,6 @@ class _EDetailPageState extends State<EDetailPage> {
           String detail = data["Detail"];
           int price =
               int.parse(data["Price"].toString().replaceAll("RM", ""));
-          bool isFreeEvent = price == 0;
 
           total = price * ticket;
 
@@ -163,7 +186,38 @@ class _EDetailPageState extends State<EDetailPage> {
 
                 Padding( padding: EdgeInsets.symmetric(horizontal: 20),
                   child: Text(detail, style: TextStyle( fontSize: 17)), 
-                ),                            
+                ), 
+
+                SizedBox(height: 20), 
+                
+                Padding( padding: EdgeInsets.symmetric(horizontal: 20), 
+                child: Row(
+                  children: [ 
+                    Text("Tickets", style: TextStyle( fontSize: 22, fontWeight: FontWeight.bold)), 
+                    SizedBox(width: 40), 
+                    Container( 
+                      padding: EdgeInsets.symmetric(horizontal: 18.0),
+                      decoration: BoxDecoration( border: Border.all(width: 2), borderRadius: BorderRadius.circular(10)), 
+                      child: Row( 
+                        children: [ 
+                          GestureDetector( 
+                            onTap: () => setState(() => ticket++), 
+                            child: 
+                              Text("+", style: TextStyle(fontSize: 25))
+                          ), 
+                          SizedBox(width: 20),
+                          Text(ticket.toString(), style: TextStyle( fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xff6351ec))), 
+                          SizedBox(width: 20),
+                          GestureDetector( 
+                            onTap: () { if (ticket > 1) setState(() => ticket--); }, 
+                            child: 
+                              Text("-", style: TextStyle(fontSize: 25))
+                          ), 
+                        ], 
+                      ),
+                    ) 
+                  ]), 
+                ), 
                 
                 SizedBox(height: 20),
                 
@@ -193,41 +247,48 @@ class _EDetailPageState extends State<EDetailPage> {
                       )
                     else
                       GestureDetector(
-                        onTap: () {
-                          if (userId == null || userName == null) {
+                        onTap: () async {
+                          final user = FirebaseAuth.instance.currentUser;
+                          if (user == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text("User information not loaded. Please try again.")),
                             );
                             return;
                           }
-                          if (isRegistered) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("You are already registered")),
-                            );
-                            return;
-                          }
 
-                          if (price == 0) {
-                            // 🆓 FREE EVENT
-                            registerFreeEvent();
-                          } else {
-                            // 💰 PAID EVENT
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => PaymentPage(
-                                  eventId: widget.eventId,
-                                  userId: userId!,
-                                  userName: userName!,
-                                  amount: total.toString(),
-                                ),
+                          // Get the actual user name from Firestore
+                          String actualUserName = 'User'; // Default fallback
+                          
+                          try {
+                            final userDoc = await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(user.uid)
+                              .get();
+                              
+                            if (userDoc.exists) {
+                              // Get from 'name' field in Firestore
+                              actualUserName = userDoc['name'] ?? 'User';
+                            }
+                          } catch (e) {
+                            print('Error fetching user name: $e');
+                            actualUserName = 'User';
+                          }
+    
+                          // Pass user info to PaymentPage
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PaymentPage(
+                                eventId: widget.eventId,
+                                userId: user.uid, // Direct from FirebaseAuth
+                                userName: actualUserName,
+                                amount: total.toString(),
                               ),
-                            ).then((_) {
-                              checkRegistration();
-                            });
-                          }
+                            ),
+                          ).then((_) {
+                            checkRegistration();
+                          });
                         },
-
                         child: Container(
                           width: 150,
                           height: 50,
@@ -252,59 +313,6 @@ class _EDetailPageState extends State<EDetailPage> {
       ),
     );
   }
-
-  Future<void> registerFreeEvent() async {
-    if (userId == null || userName == null) return;
-
-    final userEventRef = FirebaseFirestore.instance
-        .collection("users")
-        .doc(userId)
-        .collection("RegisteredEvents")
-        .doc(widget.eventId);
-
-    final eventPaymentRef = FirebaseFirestore.instance
-        .collection("Event")
-        .doc(widget.eventId)
-        .collection("Payments")
-        .doc(userId);
-
-    final existing = await userEventRef.get();
-    if (existing.exists) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("You are already registered")),
-      );
-      return;
-    }
-
-    // 🔹 Register user
-    await userEventRef.set({
-      "eventId": widget.eventId,
-      "registrationDate": FieldValue.serverTimestamp(),
-      "status": "registered",
-      "payment": "free",
-    });
-
-    // 🔹 Optional: record as payment = FREE
-    await eventPaymentRef.set({
-      "userId": userId,
-      "userName": userName,
-      "amount": "0",
-      "type": "free",
-      "timestamp": FieldValue.serverTimestamp(),
-    });
-
-    setState(() {
-      isRegistered = true;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Successfully registered for free event 🎉"),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
 }
 
 //////////////////////////////////////////////////////////////////////////////
