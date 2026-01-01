@@ -312,6 +312,11 @@ class _PaymentPageState extends State<PaymentPage> {
 
   // Upload PDF and create mirror records
   Future<void> uploadPayment() async {
+    final adminSnapshot = await FirebaseFirestore.instance
+      .collection("users")
+      .where("role", isEqualTo: "Admin")
+      .get();
+
     if (pdfFilePath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Please upload a PDF receipt")),
@@ -325,6 +330,7 @@ class _PaymentPageState extends State<PaymentPage> {
       File pdfFile = File(pdfFilePath!);
 
       // 🔹 Upload PDF to Firebase Storage
+
       final storageRef = FirebaseStorage.instance
           .ref()
           .child("PaymentReceipts")
@@ -420,6 +426,19 @@ class _PaymentPageState extends State<PaymentPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Registration successful! Receipt generated and saved.")),
       );
+
+      for (var admin in adminSnapshot.docs) {
+       await FirebaseFirestore.instance.collection("notifications").add({
+          "userId": admin.id,
+          "title": "New Payment",
+          "message":
+              "${widget.userName} submitted a payment for event \"$eventName\".",
+          "type": "payment",
+          "targetRoute": "/userManagement", // ✅ redirect
+          "createdAt": FieldValue.serverTimestamp(),
+          "isRead": false,
+        });
+      }
 
       Navigator.pop(context);
     } catch (e) {

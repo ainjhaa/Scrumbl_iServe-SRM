@@ -50,11 +50,34 @@ class NotificationPage extends StatelessWidget {
               return ListTile(
                 leading: const Icon(Icons.notifications),
                 title: Text(data["title"]),
-                subtitle: Text("${data["message"]}\n$date"),
-                isThreeLine: true,
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(data["message"]),
+                    const SizedBox(height: 4),
+                    Text(
+                      date,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+                onTap: data["targetRoute"] == null
+                    ? null // ✅ welcome message → no action
+                    : () async {
+                        await FirebaseFirestore.instance
+                            .collection("notifications")
+                            .doc(data.id)
+                            .update({"isRead": true});
+
+                        Navigator.pushNamed(
+                          context,
+                          data["targetRoute"],
+                        );
+                      },
               );
             },
           );
+
         },
       ),
     );
