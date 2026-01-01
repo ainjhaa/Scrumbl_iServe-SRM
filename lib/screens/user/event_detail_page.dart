@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:demo_app/services/shared_pref.dart';
 import 'package:demo_app/services/program_receipt_service.dart';
 
 class EDetailPage extends StatefulWidget {
@@ -31,42 +32,39 @@ class _EDetailPageState extends State<EDetailPage> {
     loadUserInfo();
   }
 
-  // Fetch user info from shared preferences
-  // In event_detail_page.dart - Replace loadUserInfo():
-Future<void> loadUserInfo() async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please log in first")),
-      );
-      Navigator.pop(context);
+  Future<void> loadUserInfo() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please log in first")),
+        );
+        Navigator.pop(context);
+      }
+      return;
     }
-    return;
-  }
-  
-  userId = user.uid;
-  
-  // Get user name from Firestore
-  try {
-    final userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .get();
     
-    userName = userDoc['name'] ?? user.displayName ?? 'User';
-  } catch (e) {
-    userName = user.displayName ?? 'User';
+    userId = user.uid;
+    
+    // Get user name from Firestore
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      
+      userName = userDoc['name'] ?? user.displayName ?? 'User';
+    } catch (e) {
+      userName = user.displayName ?? 'User';
+    }
+    
+    await checkRegistration();
+    
+    setState(() {
+      loadingUser = false;
+    });
   }
-  
-  await checkRegistration();
-  
-  setState(() {
-    loadingUser = false;
-  });
-}
 
-  // Check if user is already registered for this event
   Future<void> checkRegistration() async {
     if (userId == null) return;
     try {
@@ -84,99 +82,8 @@ Future<void> loadUserInfo() async {
     }
   }
 
-  // ✅ Register for FREE event and generate system receipt
-  Future<void> _registerFreeEventWithReceipt({
-    required User user,
-    required String userName,
-    required String eventId,
-    required String eventName,
-    required String eventDate,
-    required String eventLocation,
-  }) async {
-    try {
-      // Get user email
-      final userDoc = await FirebaseFirestore.instance
-          .collection("users")
-          .doc(user.uid)
-          .get();
-      
-      final userEmail = userDoc.data()?['email'] ?? 
-                        userDoc.data()?['Email'] ?? 
-                        userName;
-
-      // ✅ Create registration record
-      await FirebaseFirestore.instance
-          .collection("users")
-          .doc(user.uid)
-          .collection("RegisteredEvents")
-          .doc(eventId)
-          .set({
-        "eventId": eventId,
-        "registrationDate": FieldValue.serverTimestamp(),
-        "status": "registered",
-        "paymentStatus": "free",
-        "amount": 0,
-      });
-
-      // ✅ Create payment record for FREE event
-      await FirebaseFirestore.instance
-          .collection("Event")
-          .doc(eventId)
-          .collection("Payments")
-          .doc(user.uid)
-          .set({
-        "userId": user.uid,
-        "userName": userName,
-        "userEmail": userEmail,
-        "amount": "0",
-        "type": "free",
-        "paymentStatus": "free",
-        "timestamp": FieldValue.serverTimestamp(),
-      });
-
-      // ✅ Generate and save program fee receipt for FREE event
-      final programReceiptService = ProgramReceiptService();
-      final receiptResult = await programReceiptService.generateProgramReceipt(
-        userId: user.uid,
-        userName: userName,
-        userEmail: userEmail,
-        eventId: eventId,
-        eventName: eventName,
-        eventDate: eventDate,
-        eventLocation: eventLocation,
-        amount: 0.0, // FREE event has no fee
-        uploadedReceiptUrl: '', // No uploaded receipt for free events
-      );
-
-      if (!receiptResult['success']) {
-        print('Warning: Free event receipt generation had issues: ${receiptResult['error']}');
-      }
-
-      setState(() {
-        isRegistered = true;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Successfully registered for free event! Receipt generated and saved."),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      print('Error registering for free event: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Registration failed: $e")),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Wait until user info is loaded
     if (loadingUser) {
       return Scaffold(
         body: Align(alignment: Alignment.topLeft, child: CircularProgressIndicator()),
@@ -186,15 +93,14 @@ Future<void> loadUserInfo() async {
     return Scaffold(
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
-        .collection("Event")
-        .doc(widget.eventId)
-        .snapshots(),
+            .collection("Event")
+            .doc(widget.eventId)
+            .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return Align(alignment: Alignment.topLeft, child: CircularProgressIndicator());
           }
           
-          // Check if the document exists
           if (!snapshot.data!.exists) {
             return Align(alignment: Alignment.topLeft, child: CircularProgressIndicator());
           }
@@ -205,8 +111,7 @@ Future<void> loadUserInfo() async {
           String location = data["Location"];
           String date = data["Date"];
           String detail = data["Detail"];
-          int price =
-              int.parse(data["Price"].toString().replaceAll("RM", ""));
+          int price = int.parse(data["Price"].toString().replaceAll("RM", ""));
 
           total = price * ticket;
 
@@ -214,98 +119,123 @@ Future<void> loadUserInfo() async {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ... Your existing event UI code ...
                 Stack(children: [ 
-                  image != "" ? Image.network( image, height: MediaQuery.of(context).size.height / 2, 
-                                  width: MediaQuery.of(context).size.width, fit: BoxFit.cover, ) 
-                              : Image.asset( "images/event.jpg", height: MediaQuery.of(context).size.height / 2, 
-                                  width: MediaQuery.of(context).size.width, fit: BoxFit.cover, ), 
+                  image != "" ? Image.network( 
+                    image, 
+                    height: MediaQuery.of(context).size.height / 2, 
+                    width: MediaQuery.of(context).size.width, 
+                    fit: BoxFit.cover, 
+                  ) : Image.asset( 
+                    "images/event.jpg", 
+                    height: MediaQuery.of(context).size.height / 2, 
+                    width: MediaQuery.of(context).size.width, 
+                    fit: BoxFit.cover, 
+                  ), 
                   Container( 
                     height: MediaQuery.of(context).size.height / 2, 
                     child: Column( 
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween, 
-                        children: [ 
-                          Align(
-                            alignment: Alignment.topLeft,
-                            child: GestureDetector(
-                              onTap: () => Navigator.pop(context),
-                              child: Container(
-                                padding: EdgeInsets.all(8),
-                                margin: EdgeInsets.only(top: 40.0, left: 20.0),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                child: Icon(Icons.arrow_back_ios_new_outlined),
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+                      children: [ 
+                        Align(
+                          alignment: Alignment.topLeft,
+                          child: GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              padding: EdgeInsets.all(8),
+                              margin: EdgeInsets.only(top: 40.0, left: 20.0),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(30),
                               ),
+                              child: Icon(Icons.arrow_back_ios_new_outlined),
                             ),
                           ),
-                          Container( 
-                            width: double.infinity, padding: EdgeInsets.all(20), color: Colors.black54, 
-                            child: Column( 
-                              crossAxisAlignment: CrossAxisAlignment.start, 
-                              children: [ 
-                                Text(name, style: TextStyle( color: Colors.white, fontSize: 25, fontWeight: FontWeight.bold)), 
-                                Row( children: [ 
-                                  Icon(Icons.calendar_month, color: Colors.white),  
-                                  SizedBox(width: 5),                                 
-                                  Text(date, style: TextStyle( color: Colors.white, fontSize: 18)), 
-                                  SizedBox(width: 10), 
-                                  Icon(Icons.location_on_outlined, color: Colors.white),   
-                                  SizedBox(width: 5),                                 
-                                  Expanded( child:
-                                    Text(location, style: TextStyle(color: Colors.white, fontSize: 18),
-                                    softWrap: true, maxLines: 2, // wrap into maximum 2 lines
-                                    overflow: TextOverflow.ellipsis) ) // show "..." if too long), 
-                            ], ) 
-                              ], 
-                            ), 
-                          ) 
-                        ], 
+                        ),
+                        Container( 
+                          width: double.infinity, 
+                          padding: EdgeInsets.all(20), 
+                          color: Colors.black54, 
+                          child: Column( 
+                            crossAxisAlignment: CrossAxisAlignment.start, 
+                            children: [ 
+                              Text(name, style: TextStyle( 
+                                color: Colors.white, 
+                                fontSize: 25, 
+                                fontWeight: FontWeight.bold
+                              )), 
+                              Row( children: [ 
+                                Icon(Icons.calendar_month, color: Colors.white),  
+                                SizedBox(width: 5),                                 
+                                Text(date, style: TextStyle(color: Colors.white, fontSize: 18)), 
+                                SizedBox(width: 10), 
+                                Icon(Icons.location_on_outlined, color: Colors.white),   
+                                SizedBox(width: 5),                                 
+                                Expanded( 
+                                  child: Text(
+                                    location, 
+                                    style: TextStyle(color: Colors.white, fontSize: 18),
+                                    softWrap: true, 
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis
+                                  )
+                                ) 
+                              ], ) 
+                            ], 
+                          ), 
+                        ) 
+                      ], 
                     ), 
                   ) 
                 ]), 
                 SizedBox(height: 20), 
 
-                Padding( padding: EdgeInsets.only(left: 20), 
+                Padding( 
+                  padding: EdgeInsets.only(left: 20), 
                   child: Text("About Event", style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)), 
                 ), 
 
                 SizedBox(height: 10), 
 
-                Padding( padding: EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(detail, style: TextStyle( fontSize: 17)), 
+                Padding( 
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(detail, style: TextStyle(fontSize: 17)), 
                 ), 
 
                 SizedBox(height: 20), 
                 
-                Padding( padding: EdgeInsets.symmetric(horizontal: 20), 
-                child: Row(
-                  children: [ 
-                    Text("Tickets", style: TextStyle( fontSize: 22, fontWeight: FontWeight.bold)), 
-                    SizedBox(width: 40), 
-                    Container( 
-                      padding: EdgeInsets.symmetric(horizontal: 18.0),
-                      decoration: BoxDecoration( border: Border.all(width: 2), borderRadius: BorderRadius.circular(10)), 
-                      child: Row( 
-                        children: [ 
-                          GestureDetector( 
-                            onTap: () => setState(() => ticket++), 
-                            child: 
-                              Text("+", style: TextStyle(fontSize: 25))
-                          ), 
-                          SizedBox(width: 20),
-                          Text(ticket.toString(), style: TextStyle( fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xff6351ec))), 
-                          SizedBox(width: 20),
-                          GestureDetector( 
-                            onTap: () { if (ticket > 1) setState(() => ticket--); }, 
-                            child: 
-                              Text("-", style: TextStyle(fontSize: 25))
-                          ), 
-                        ], 
-                      ),
-                    ) 
-                  ]), 
+                Padding( 
+                  padding: EdgeInsets.symmetric(horizontal: 20), 
+                  child: Row(
+                    children: [ 
+                      Text("Tickets", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)), 
+                      SizedBox(width: 40), 
+                      Container( 
+                        padding: EdgeInsets.symmetric(horizontal: 18.0),
+                        decoration: BoxDecoration( 
+                          border: Border.all(width: 2), 
+                          borderRadius: BorderRadius.circular(10)
+                        ), 
+                        child: Row( 
+                          children: [ 
+                            GestureDetector( 
+                              onTap: () => setState(() => ticket++), 
+                              child: Text("+", style: TextStyle(fontSize: 25))
+                            ), 
+                            SizedBox(width: 20),
+                            Text(ticket.toString(), style: TextStyle( 
+                              fontSize: 24, 
+                              fontWeight: FontWeight.bold, 
+                              color: Color(0xff6351ec)
+                            )), 
+                            SizedBox(width: 20),
+                            GestureDetector( 
+                              onTap: () { if (ticket > 1) setState(() => ticket--); }, 
+                              child: Text("-", style: TextStyle(fontSize: 25))
+                            ), 
+                          ], 
+                        ),
+                      ) 
+                    ]), 
                 ), 
                 
                 SizedBox(height: 20),
@@ -345,8 +275,7 @@ Future<void> loadUserInfo() async {
                             return;
                           }
 
-                          // Get the actual user name from Firestore
-                          String actualUserName = 'User'; // Default fallback
+                          String actualUserName = 'User';
                           
                           try {
                             final userDoc = await FirebaseFirestore.instance
@@ -355,7 +284,6 @@ Future<void> loadUserInfo() async {
                               .get();
                               
                             if (userDoc.exists) {
-                              // Get from 'name' field in Firestore
                               actualUserName = userDoc['name'] ?? 'User';
                             }
                           } catch (e) {
@@ -363,28 +291,6 @@ Future<void> loadUserInfo() async {
                             actualUserName = 'User';
                           }
     
-                          // ✅ Get event details from StreamBuilder data
-                          var data = snapshot.data!;
-                          String eventName = data["Name"];
-                          String eventDate = data["Date"];
-                          String eventLocation = data["Location"];
-                          int price = int.parse(data["Price"].toString().replaceAll("RM", ""));
-
-                          // Check if it's a FREE event (RM0)
-                          if (price == 0) {
-                            // ✅ Register for FREE event with automatic receipt generation
-                            await _registerFreeEventWithReceipt(
-                              user: user,
-                              userName: actualUserName,
-                              eventId: widget.eventId,
-                              eventName: eventName,
-                              eventDate: eventDate,
-                              eventLocation: eventLocation,
-                            );
-                            return;
-                          }
-
-                          // ✅ For PAID events, go to payment page
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -393,6 +299,10 @@ Future<void> loadUserInfo() async {
                                 userId: user.uid,
                                 userName: actualUserName,
                                 amount: total.toString(),
+                                eventName: name,
+                                eventDate: date,
+                                eventLocation: location,
+                                eventPrice: price.toString(),
                               ),
                             ),
                           ).then((_) {
@@ -426,7 +336,7 @@ Future<void> loadUserInfo() async {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-/// PAYMENT PAGE INSIDE SAME FILE
+/// PAYMENT PAGE
 //////////////////////////////////////////////////////////////////////////////
 
 class PaymentPage extends StatefulWidget {
@@ -434,12 +344,20 @@ class PaymentPage extends StatefulWidget {
   final String userId;
   final String amount;
   final String userName;
+  final String eventName;
+  final String eventDate;
+  final String eventLocation;
+  final String eventPrice;
 
   PaymentPage({
     required this.eventId,
     required this.userId,
     required this.amount,
     required this.userName,
+    required this.eventName,
+    required this.eventDate,
+    required this.eventLocation,
+    required this.eventPrice,
   });
 
   @override
@@ -450,7 +368,6 @@ class _PaymentPageState extends State<PaymentPage> {
   String? pdfFilePath;
   bool uploading = false;
 
-  // Pick PDF from device
   Future<void> pickPdf() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -464,143 +381,168 @@ class _PaymentPageState extends State<PaymentPage> {
     }
   }
 
-  // Upload PDF and create mirror records
   Future<void> uploadPayment() async {
-    final adminSnapshot = await FirebaseFirestore.instance
-      .collection("users")
-      .where("role", isEqualTo: "Admin")
-      .get();
-
-    if (pdfFilePath == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Please upload a PDF receipt")),
-      );
-      return;
-    }
-
-    setState(() => uploading = true);
-
-    try {
-      File pdfFile = File(pdfFilePath!);
-
-      // 🔹 Upload PDF to Firebase Storage
-
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child("PaymentReceipts")
-          .child(widget.eventId)
-          .child("${widget.userId}.pdf");
-
-      await storageRef.putFile(pdfFile);
-
-      String pdfUrl = await storageRef.getDownloadURL();
-
-      // 🔹 Fetch event details for receipt generation
-      final eventDoc = await FirebaseFirestore.instance
-          .collection("Event")
-          .doc(widget.eventId)
-          .get();
-
-      final eventName = eventDoc['Name'] ?? "Unknown Event";
-      final eventDate = eventDoc['Date'] ?? "N/A";
-      final eventLocation = eventDoc['Location'] ?? "N/A";
-
-      // 🔹 Fetch user email from database
-      final userDoc = await FirebaseFirestore.instance
-          .collection("users")
-          .doc(widget.userId)
-          .get();
-      
-      final userEmail = userDoc.data()?['email'] ?? 
-                        userDoc.data()?['Email'] ?? 
-                        widget.userName;
-
-      // 🔹 Payment data map
-      Map<String, dynamic> paymentData = {
-        "userId": widget.userId,
-        "userName": widget.userName,
-        "userEmail": userEmail,
-        "amount": widget.amount,
-        "receiptPdf": pdfUrl,
-        "timestamp": FieldValue.serverTimestamp(),
-      };
-
-      // 🔹 Store under Event/{eventId}/Payments/{userId}
-      await FirebaseFirestore.instance
-          .collection("Event")
-          .doc(widget.eventId)
-          .collection("Payments")
-          .doc(widget.userId)
-          .set(paymentData);
-
-      // 🔹 Mirror under Users/{userId}/Payments/{eventId}
-      await FirebaseFirestore.instance
-          .collection("users")
-          .doc(widget.userId)
-          .collection("Payments")
-          .doc(widget.eventId)
-          .set({
-        ...paymentData,
-        "eventId": widget.eventId,
-      });
-
-      // 🔹 Create registration record in Users/{userId}/RegisteredEvents/{eventId}
-      await FirebaseFirestore.instance
-          .collection("users")
-          .doc(widget.userId)
-          .collection("RegisteredEvents")
-          .doc(widget.eventId)
-          .set({
-        "eventId": widget.eventId,
-        "registrationDate": FieldValue.serverTimestamp(),
-        "status": "registered",
-      });
-
-      // 🔹 Generate and save program fee receipt (system-generated PDF)
-      final programReceiptService = ProgramReceiptService();
-      final receiptResult = await programReceiptService.generateProgramReceipt(
-        userId: widget.userId,
-        userName: widget.userName,
-        userEmail: userEmail,
-        eventId: widget.eventId,
-        eventName: eventName,
-        eventDate: eventDate,
-        eventLocation: eventLocation,
-        amount: double.parse(widget.amount),
-        uploadedReceiptUrl: pdfUrl,
-      );
-
-      if (!receiptResult['success']) {
-        print('Warning: Receipt generation had issues: ${receiptResult['error']}');
-      }
-
-      setState(() => uploading = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Registration successful! Receipt generated and saved.")),
-      );
-
-      for (var admin in adminSnapshot.docs) {
-       await FirebaseFirestore.instance.collection("notifications").add({
-          "userId": admin.id,
-          "title": "New Payment",
-          "message":
-              "${widget.userName} submitted a payment for event \"$eventName\".",
-          "type": "payment",
-          "targetRoute": "/userManagement", // ✅ redirect
-          "createdAt": FieldValue.serverTimestamp(),
-          "isRead": false,
-        });
-      }
-
-      Navigator.pop(context);
-    } catch (e) {
-      setState(() => uploading = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Upload failed: $e")));
-      print('Upload error: $e');
-    }
+  if (pdfFilePath == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Please upload a PDF receipt")),
+    );
+    return;
   }
+
+  setState(() => uploading = true);
+
+  try {
+    File pdfFile = File(pdfFilePath!);
+
+    // 1. Upload PDF to Firebase Storage
+    final storageRef = FirebaseStorage.instance
+        .ref()
+        .child("PaymentReceipts")
+        .child(widget.eventId)
+        .child("${widget.userId}.pdf");
+
+    await storageRef.putFile(pdfFile);
+    String pdfUrl = await storageRef.getDownloadURL();
+
+    // 2. Fetch user email
+    final userDoc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(widget.userId)
+        .get();
+    
+    final userEmail = userDoc.data()?['email'] ?? 
+                      userDoc.data()?['Email'] ?? 
+                      widget.userName;
+
+    // Get current timestamp for consistent use
+    final timestamp = DateTime.now();
+
+    // 3. Payment data map - use actual timestamp
+    Map<String, dynamic> paymentData = {
+      "userId": widget.userId,
+      "userName": widget.userName,
+      "userEmail": userEmail,
+      "amount": widget.amount,
+      "receiptPdf": pdfUrl,
+      "timestamp": timestamp, // Use DateTime instead of FieldValue
+      "status": "paid",
+    };
+
+    // 4. Batch write for atomic operations
+    WriteBatch batch = FirebaseFirestore.instance.batch();
+
+    // 4a. Store under Event/{eventId}/Payments/{userId} - with FieldValue for timestamp
+    final paymentRef = FirebaseFirestore.instance
+        .collection("Event")
+        .doc(widget.eventId)
+        .collection("Payments")
+        .doc(widget.userId);
+    batch.set(paymentRef, {
+      ...paymentData,
+      "timestamp": FieldValue.serverTimestamp(), // Use FieldValue only in set()
+    });
+
+    // 4b. Mirror under Users/{userId}/Payments/{eventId}
+    final userPaymentRef = FirebaseFirestore.instance
+        .collection("users")
+        .doc(widget.userId)
+        .collection("Payments")
+        .doc(widget.eventId);
+    batch.set(userPaymentRef, {
+      ...paymentData,
+      "eventId": widget.eventId,
+      "eventName": widget.eventName,
+      "eventDate": widget.eventDate,
+      "eventLocation": widget.eventLocation,
+      "timestamp": FieldValue.serverTimestamp(), // Use FieldValue only in set()
+    });
+
+    // 4c. Add user to Event's RegisteredUsers array
+    final eventRef = FirebaseFirestore.instance
+        .collection("Event")
+        .doc(widget.eventId);
+    
+    // Create a map without FieldValue for arrayUnion
+    Map<String, dynamic> userRegistrationData = {
+      "userId": widget.userId,
+      "userName": widget.userName,
+      "registrationDate": timestamp, // Use DateTime for array
+    };
+    
+    batch.update(eventRef, {
+      "RegisteredUsers": FieldValue.arrayUnion([userRegistrationData])
+    });
+
+    // 4d. Add event to User's RegisteredEvents - use FieldValue in set()
+    final userEventRef = FirebaseFirestore.instance
+        .collection("users")
+        .doc(widget.userId)
+        .collection("RegisteredEvents")
+        .doc(widget.eventId);
+    batch.set(userEventRef, {
+      "eventId": widget.eventId,
+      "eventName": widget.eventName,
+      "eventDate": widget.eventDate,
+      "eventLocation": widget.eventLocation,
+      "eventPrice": widget.eventPrice,
+      "registrationDate": FieldValue.serverTimestamp(), // Use FieldValue in set()
+      "status": "registered",
+      "paymentStatus": "paid",
+    });
+
+    // Execute batch
+    await batch.commit();
+
+    // 5. Generate and save program fee receipt
+    final programReceiptService = ProgramReceiptService();
+    final receiptResult = await programReceiptService.generateProgramReceipt(
+      userId: widget.userId,
+      userName: widget.userName,
+      userEmail: userEmail,
+      eventId: widget.eventId,
+      eventName: widget.eventName,
+      eventDate: widget.eventDate,
+      eventLocation: widget.eventLocation,
+      amount: double.parse(widget.amount),
+      uploadedReceiptUrl: pdfUrl,
+    );
+
+    if (!receiptResult['success']) {
+      print('Warning: Receipt generation had issues: ${receiptResult['error']}');
+    }
+
+    // 6. Send notifications to all admins
+    final adminSnapshot = await FirebaseFirestore.instance
+        .collection("users")
+        .where("role", isEqualTo: "Admin")
+        .get();
+
+    for (var admin in adminSnapshot.docs) {
+      await FirebaseFirestore.instance.collection("notifications").add({
+        "userId": admin.id,
+        "title": "New Registration",
+        "message": "${widget.userName} registered for \"${widget.eventName}\".",
+        "type": "registration",
+        "targetRoute": "/eventReport",
+        "createdAt": FieldValue.serverTimestamp(),
+        "isRead": false,
+      });
+    }
+
+    setState(() => uploading = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Registration successful! Receipt generated and saved.")),
+    );
+
+    Navigator.pop(context);
+  } catch (e) {
+    setState(() => uploading = false);
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text("Upload failed: $e")));
+    print('Upload error: $e');
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -610,6 +552,39 @@ class _PaymentPageState extends State<PaymentPage> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
+            // Event Info Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.eventName,
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today, size: 16),
+                        SizedBox(width: 8),
+                        Text(widget.eventDate),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on, size: 16),
+                        SizedBox(width: 8),
+                        Text(widget.eventLocation),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            SizedBox(height: 20),
+
             Center(
               child: Image.asset(
                 "assets/qrbank.jpg",
@@ -648,10 +623,12 @@ class _PaymentPageState extends State<PaymentPage> {
                 ? CircularProgressIndicator()
                 : ElevatedButton(
                     onPressed: uploadPayment,
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: Size(double.infinity, 50),
+                    ),
                     child: Text(
                       "Submit Payment",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
           ],
