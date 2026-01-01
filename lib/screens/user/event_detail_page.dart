@@ -112,10 +112,7 @@ class _EDetailPageState extends State<EDetailPage> {
           int price =
               int.parse(data["Price"].toString().replaceAll("RM", ""));
           bool isFreeEvent = price == 0;  
-          int price = int.parse(data["Price"].toString().replaceAll("RM", ""));
-
-          total = price * ticket;
-
+        
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,43 +198,6 @@ class _EDetailPageState extends State<EDetailPage> {
                   padding: EdgeInsets.symmetric(horizontal: 20),
                   child: Text(detail, style: TextStyle(fontSize: 17)), 
                 ), 
-
-                SizedBox(height: 20), 
-                
-                Padding( 
-                  padding: EdgeInsets.symmetric(horizontal: 20), 
-                  child: Row(
-                    children: [ 
-                      Text("Tickets", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)), 
-                      SizedBox(width: 40), 
-                      Container( 
-                        padding: EdgeInsets.symmetric(horizontal: 18.0),
-                        decoration: BoxDecoration( 
-                          border: Border.all(width: 2), 
-                          borderRadius: BorderRadius.circular(10)
-                        ), 
-                        child: Row( 
-                          children: [ 
-                            GestureDetector( 
-                              onTap: () => setState(() => ticket++), 
-                              child: Text("+", style: TextStyle(fontSize: 25))
-                            ), 
-                            SizedBox(width: 20),
-                            Text(ticket.toString(), style: TextStyle( 
-                              fontSize: 24, 
-                              fontWeight: FontWeight.bold, 
-                              color: Color(0xff6351ec)
-                            )), 
-                            SizedBox(width: 20),
-                            GestureDetector( 
-                              onTap: () { if (ticket > 1) setState(() => ticket--); }, 
-                              child: Text("-", style: TextStyle(fontSize: 25))
-                            ), 
-                          ], 
-                        ),
-                      ) 
-                    ]), 
-                ), 
                 
                 SizedBox(height: 20),
                 
@@ -299,7 +259,7 @@ class _EDetailPageState extends State<EDetailPage> {
                                 eventId: widget.eventId,
                                 userId: user.uid,
                                 userName: actualUserName,
-                                amount: total.toString(),
+                                amount: price.toString(),
                                 eventName: name,
                                 eventDate: date,
                                 eventLocation: location,
