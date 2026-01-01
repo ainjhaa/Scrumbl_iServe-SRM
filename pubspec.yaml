@@ -57,6 +57,9 @@ dependencies:
   flutter_dotenv: ^6.0.0
   printing: ^5.11.3
   path_provider: ^2.1.1
+  pdf: ^3.10.6
+  printing: ^5.11.3
+  path_provider: ^2.1.1
 
 dev_dependencies:
   flutter_test:
