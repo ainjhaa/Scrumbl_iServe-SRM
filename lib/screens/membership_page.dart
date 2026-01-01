@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:demo_app/screens/membership_payment_page.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -186,47 +187,150 @@ class _MembershipPageState extends State<MembershipPage> {
         (DateTime.now().microsecond % 1000).toString();
   }
 
-  Widget buildUploadSection() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          const Icon(Icons.workspace_premium, color: Colors.amber, size: 100),
-          const SizedBox(height: 20),
-          const Text(
-            "Become a Premium Member",
-            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+  // In membership_page.dart - Update buildUploadSection method
+Widget buildUploadSection() {
+  return SingleChildScrollView(
+    padding: const EdgeInsets.all(20),
+    child: Column(
+      children: [
+        const Icon(Icons.workspace_premium, color: Colors.amber, size: 100),
+        const SizedBox(height: 20),
+        const Text(
+          "Become a Premium Member",
+          style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        const Text(
+          "Access exclusive content, faster support, and VIP events!",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+        const SizedBox(height: 20),
+
+        // Membership Fee Information
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue[50],
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(height: 10),
-          const Text(
-            "Access exclusive content, faster support, and VIP events!",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: Colors.grey),
+          child: Column(
+            children: [
+              const Text(
+                'Membership Fee: RM10.00',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Pay once for annual membership',
+                style: TextStyle(fontSize: 14),
+              ),
+            ],
           ),
-          const SizedBox(height: 20),
-          if (pickedFile != null)
-            Container(
-              height: 150,
-              width: double.infinity,
-              color: Colors.blue[100],
-              child: Center(child: Text(pickedFile!.name)),
+        ),
+        const SizedBox(height: 20),
+
+        // Two Options: Pay Now or Upload Later
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                const Text(
+                  'Choose Payment Method',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Option 1: Pay with QR Code
+                ListTile(
+                  leading: const Icon(Icons.qr_code, color: Colors.blue),
+                  title: const Text('Pay Now with QR Code'),
+                  subtitle: const Text('Scan QR code and upload receipt'),
+                  trailing: const Icon(Icons.arrow_forward_ios),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MembershipPaymentPage(
+                          membershipType: 'club_membership',
+                          amount: 10.0,
+                          title: 'Premium Membership Payment',
+                          description: 'Complete payment to proceed with membership application',
+                          additionalDetails: {
+                            'Fee Type': 'Annual Membership',
+                            'Duration': '1 Year',
+                            'Benefits': 'All premium features',
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(),
+
+                // Option 2: Upload Receipt Only
+                ListTile(
+                  leading: const Icon(Icons.upload_file, color: Colors.orange),
+                  title: const Text('Upload Payment Receipt'),
+                  subtitle: const Text('If you have already paid'),
+                  trailing: const Icon(Icons.arrow_forward_ios),
+                  onTap: () {
+                    // Show file upload section
+                    _showUploadDialog();
+                  },
+                ),
+              ],
             ),
-          const SizedBox(height: 32),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// Helper method for upload only option
+void _showUploadDialog() {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Upload Payment Receipt'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Please upload your payment receipt.'),
+          const SizedBox(height: 20),
           ElevatedButton(
-            child: const Text('Select File'),
             onPressed: selectFile,
+            child: const Text('Select File'),
           ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            child: const Text('Upload File'),
-            onPressed: uploadFile,
-          ),
-          const SizedBox(height: 32),
-          buildProgress(),
         ],
       ),
-    );
-  }
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context);
+            if (pickedFile != null) {
+              uploadFile();
+            }
+          },
+          child: const Text('Upload'),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget buildPendingSection() {
     return Center(
