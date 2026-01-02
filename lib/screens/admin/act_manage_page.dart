@@ -48,7 +48,7 @@ class _ActivityPageState extends State<ActivityPage> {
                   );
                 },
                 child: _menuButton(
-                  iconPath: "assets/up.png",
+                  iconPath: "assets/ticket.png",
                   title: "List\nEvents",
                 ),
               ),
