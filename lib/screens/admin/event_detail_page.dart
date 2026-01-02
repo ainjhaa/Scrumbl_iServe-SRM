@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 import 'edit_event.dart';
 
@@ -50,7 +51,7 @@ class AdminEventDetailPage extends StatelessWidget {
                   child: Icon(Icons.image_not_supported, size: 80),
                 ),
 
-                //SizedBox(height: 20),
+                SizedBox(height: 10),
 
                 // EVENT NAME
                 Padding(
@@ -58,7 +59,7 @@ class AdminEventDetailPage extends StatelessWidget {
                   child: Text(
                     data["Name"],
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -70,19 +71,26 @@ class AdminEventDetailPage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(Icons.calendar_month),
                       SizedBox(width: 8),
-                      Text(data["Date"], style: TextStyle(fontSize: 18)),
+                      Text(data["Date"], style: TextStyle(fontSize: 16)),
                       SizedBox(width: 20),
                       Icon(Icons.location_on_outlined),
                       SizedBox(width: 8),
-                      Text(data["Location"], style: TextStyle(fontSize: 18)),
+                      Expanded(
+                        child: Text(
+                          data["Location"],
+                          style: TextStyle(fontSize: 16),
+                          maxLines: 3, overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   ),
                 ),
 
-                SizedBox(height: 20),
+                SizedBox(height: 10),
 
                 // EVENT DETAILS
                 Padding(
@@ -90,7 +98,7 @@ class AdminEventDetailPage extends StatelessWidget {
                   child: Text(
                     "About Event",
                     style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold
                     ),
                   ),
@@ -102,7 +110,7 @@ class AdminEventDetailPage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
                     data["Detail"],
-                    style: TextStyle(fontSize: 18, color: Colors.black87),
+                    style: TextStyle(fontSize: 16, color: Colors.black87),
                   ),
                 ),
 
@@ -160,6 +168,7 @@ class AdminEventDetailPage extends StatelessWidget {
                     ],
                   ),
                 ),
+                SizedBox(height: 100),
               ],
             ),
           );
@@ -177,37 +186,65 @@ class RegisteredUsersPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Registered Users")),
+      appBar: AppBar(title: const Text("Registered Users")),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('Event')
             .doc(eventId)
             .collection('registrations')
+            .orderBy('registeredAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.data!.docs.isEmpty) {
-            return Center(child: Text("No registered users yet."));
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("No registered users yet."));
           }
 
-          return ListView(
-            children: snapshot.data!.docs.map((doc) {
-              final user = doc.data() as Map<String, dynamic>;
-              return ListTile(
-                leading: Icon(Icons.person),
-                title: Text(user['name']),
-                subtitle: Text(user['email']),
+          final docs = snapshot.data!.docs;
+          if (docs.isEmpty) {
+                      return Center(child: Text("No registered users yet."));
+                    }
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final data = docs[index].data() as Map<String, dynamic>;
+
+              final name = data['name'] ?? "Unknown";
+              final email = data['email'] ?? "N/A";
+              final Timestamp? ts = data['registeredAt'];
+
+              final date = ts != null
+                  ? DateFormat('dd/MM/yyyy HH:mm').format(ts.toDate())
+                  : "N/A";
+
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: ListTile(
+                  leading: const CircleAvatar(child: Icon(Icons.person)),
+                  title: Text(name),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(email),
+                      Text(
+                        "Registered: $date",
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
               );
-            }).toList(),
+            },
           );
         },
       ),
     );
   }
 }
+
 
 class AdminActionButton extends StatelessWidget {
   final IconData icon;
