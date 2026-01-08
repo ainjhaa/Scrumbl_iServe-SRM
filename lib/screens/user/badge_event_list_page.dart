@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class BadgeEventListPage extends StatelessWidget {
   final int badgeIndex;
@@ -14,58 +15,73 @@ class BadgeEventListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Map badgeIndex to category string
+    final userId = FirebaseAuth.instance.currentUser!.uid;
     final String category = Category[badgeIndex - 1];
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Events for $category"),
+        title: Text("$category Badge Events"),
       ),
-      body: StreamBuilder(
+      body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection("Event")
-            .where("Category", isEqualTo: category) // filter events by category
+            .collection("users")
+            .doc(userId)
+            .collection("RegisteredEvents")
+            .where("attendance", isEqualTo: "attended") // or true
             .snapshots(),
-        builder: (context, AsyncSnapshot snapshot) {
-          if (!snapshot.hasData) {
+        builder: (context, userSnapshot) {
+          if (!userSnapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          var docs = snapshot.data.docs;
+          final attendedDocs = userSnapshot.data!.docs;
 
-          if (docs.isEmpty) {
+          if (attendedDocs.isEmpty) {
             return const Center(
-              child: Text("No events for this badge yet."),
+              child: Text("No attended events yet."),
             );
           }
 
           return ListView.builder(
-            itemCount: docs.length,
+            itemCount: attendedDocs.length,
             itemBuilder: (context, index) {
-              var data = docs[index];
+              final eventId = attendedDocs[index].id;
 
-              return Card(
-                margin: const EdgeInsets.all(10),
-                elevation: 3,
-                child: ListTile(
-                  title: Text(data["Name"]),
-                  subtitle: Text("${data["Date"]} | ${data["Location"]}"),
-                  /*trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {
-                    // Navigate to your existing event detail page
-                    Navigator.pushNamed(
-                      context,
-                      "/eventDetail",
-                      arguments: data.id,
-                    );
-                  },*/
-                ),
+              return FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection("Event")
+                    .doc(eventId)
+                    .get(),
+                builder: (context, eventSnapshot) {
+                  if (!eventSnapshot.hasData) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final eventData =
+                      eventSnapshot.data!.data() as Map<String, dynamic>?;
+
+                  if (eventData == null ||
+                      eventData["Category"] != category) {
+                    return const SizedBox.shrink(); // ❌ not this badge category
+                  }
+
+                  return Card(
+                    margin: const EdgeInsets.all(10),
+                    elevation: 3,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.fromLTRB(10, 15, 10, 15),
+                      title: Text(eventData["Name"] ?? "Unnamed Event"),
+                      subtitle: Text(
+                        "${eventData["Date"] ?? "N/A"} | ${eventData["Location"] ?? "N/A"}",
+                      ),
+                    ),
+                  );
+                },
               );
             },
           );
         },
       ),
-
     );
   }
 }

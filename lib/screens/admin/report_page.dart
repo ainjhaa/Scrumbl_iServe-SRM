@@ -507,10 +507,7 @@ class UserReport extends StatelessWidget {
                   }
                   
                   final users = snapshot.data!.docs;
-                  int totalUsers = users.length;
-                  
-                  // Count active users (those with registered events)
-                  int activeUsers = 0;
+                  int totalUsers = users.length;    
                   
                   return FutureBuilder<int>(
                     future: _getActiveUsersCount(users),
@@ -1030,7 +1027,6 @@ class UserDetailsPage extends StatelessWidget {
             final eventDate = eventData["eventDate"]?.toString() ?? "No Date";
             final eventLocation = eventData["eventLocation"]?.toString() ?? "No Location";
             final eventPrice = eventData["eventPrice"]?.toString() ?? "Free";
-            final status = eventData["status"]?.toString() ?? "registered";
             final paymentStatus = eventData["paymentStatus"]?.toString() ?? "paid";
             final attendance = eventData["attendance"]?.toString() ?? "pending";
 

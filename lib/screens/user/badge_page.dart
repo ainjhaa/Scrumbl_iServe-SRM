@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'badge_event_list_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class BadgePage extends StatelessWidget {
   final List<String> badgeImages = [
@@ -109,18 +110,35 @@ class BadgePage extends StatelessWidget {
     );
   }
 
-  /// Count how many events belong to this badge.
   /// Count how many events belong to this badge/category.
-Future<int> _countEvents(int badgeIndex) async {
-  // Map index to category
-  String category = categories[badgeIndex - 1]; // assuming badgeIndex starts at 1
+  Future<int> _countEvents(int badgeIndex) async {
+    final userId = FirebaseAuth.instance.currentUser!.uid;
+    final category = categories[badgeIndex - 1];
 
-  QuerySnapshot snap = await FirebaseFirestore.instance
-      .collection("Event")
-      .where("Category", isEqualTo: category)
-      .get();
+    // Get attended events for this user
+    final userSnap = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .collection("RegisteredEvents")
+        .where("attendance", isEqualTo: "attended") // or true if boolean
+        .get();
 
-  return snap.docs.length;
-}
+    int count = 0;
 
+    // For each attended event, check its category
+    for (final doc in userSnap.docs) {
+      final eventId = doc.id;
+
+      final eventSnap = await FirebaseFirestore.instance
+          .collection("Event")
+          .doc(eventId)
+          .get();
+
+      if (eventSnap.exists &&
+          eventSnap.data()?['Category'] == category) {
+        count++;
+      }
+    }
+    return count;
+  }
 }
