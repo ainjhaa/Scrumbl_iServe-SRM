@@ -108,6 +108,7 @@ class MyActivitiesPage extends StatelessWidget {
                       final eventLocation = eventData['Location'] ?? "N/A";
                       final eventImage = eventData['Image'] ?? "";
                       final eventPrice = eventData['Price'] ?? "N/A";
+                      final attendance = registeredEventDocs[index]['attendance'] ?? "pending";
 
                       return FutureBuilder<DocumentSnapshot>(
                         future: FirebaseFirestore.instance
@@ -146,11 +147,22 @@ class MyActivitiesPage extends StatelessWidget {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        eventName,
-                                        style: const TextStyle(
-                                            fontSize: 20, fontWeight: FontWeight.bold),
-                                      ),
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(child: 
+                                            Text(
+                                              eventName,
+                                              style: const TextStyle(
+                                                  fontSize: 20, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                          Container(                                                                                 
+                                            child: _attendanceBadge(attendance), // ✅ NEW
+                                            ),
+                                        ],
+                                      ),                                      
+                        
                                       const SizedBox(height: 8),
                                       Row(
                                         children: [
@@ -161,6 +173,7 @@ class MyActivitiesPage extends StatelessWidget {
                                       ),
                                       const SizedBox(height: 8),
                                       Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           const Icon(Icons.location_on, size: 16),
                                           const SizedBox(width: 8),
@@ -199,8 +212,6 @@ class MyActivitiesPage extends StatelessWidget {
                                             children: [
                                               // Generated Receipt Button
                                               if (receiptSnapshot.hasData && receiptSnapshot.data != null)
-                                                Column(
-                                                  children: [
                                                     ElevatedButton.icon(
                                                       onPressed: () {
                                                         final receipt = receiptSnapshot.data!;
@@ -214,8 +225,7 @@ class MyActivitiesPage extends StatelessWidget {
                                                       ),
                                                     ),
                                                     const SizedBox(height: 8),
-                                                  ],
-                                                ),
+                                              
                                               // Uploaded Receipt Button
                                               if (receiptPdf != null)
                                                 ElevatedButton.icon(
@@ -253,6 +263,41 @@ class MyActivitiesPage extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _attendanceBadge(String attendance) {
+    Color bg;
+    Color fg;
+    String label;
+
+    switch (attendance) {
+      case "attended":
+        bg = Colors.green[100]!;
+        fg = Colors.green[800]!;
+        label = "Attended";
+        break;
+      case "absent":
+        bg = Colors.red[100]!;
+        fg = Colors.red[800]!;
+        label = "Absent";
+        break;
+      default:
+        bg = Colors.orange[100]!;
+        fg = Colors.orange[800]!;
+        label = "Pending";
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: fg),
       ),
     );
   }

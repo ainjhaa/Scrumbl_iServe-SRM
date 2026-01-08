@@ -55,7 +55,7 @@ class EventReport extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text("Total Events: Loading..."),
-                        Text("Total Participants: Loading..."),
+                        //Text("Total Participants: Loading..."),
                       ],
                     );
                   }
@@ -140,6 +140,28 @@ class EventReport extends StatelessWidget {
                       participantsList = [participants];
                     }
 
+                    int attendedCount = 0;
+                    int absentCount = 0;
+                    int pendingCount = 0;
+
+                    for (var p in participantsList) {
+                      if (p is Map) {
+                        final status = p["attendance"] ?? "pending";
+                        if (status == "attended") {
+                          attendedCount++;
+                        } else if (status == "absent") {
+                          absentCount++;
+                        } else {
+                          pendingCount++;
+                        }
+                      }
+                    }
+
+                    final totalRegistered = participantsList.length;
+                    final attendanceRate = totalRegistered == 0
+                        ? 0
+                        : ((attendedCount / totalRegistered) * 100).round();
+
                     return Card(
                       elevation: 3,
                       margin: const EdgeInsets.only(bottom: 15),
@@ -212,35 +234,72 @@ class EventReport extends StatelessWidget {
                             
                             // Participants Summary
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
                                 color: Colors.blue[50],
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    "Total Participants: ${participantsList.length}",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
+                                  // Top row
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        "Registered: $totalRegistered",
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      if (totalRegistered > 0)
+                                        FutureBuilder<int>(
+                                          future: _calculateRevenue(price, totalRegistered),
+                                          builder: (context, snapshot) {
+                                            final revenue = snapshot.data ?? 0;
+                                            return Text(
+                                              "Revenue: RM $revenue",
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.green,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                    ],
                                   ),
-                                  if (participantsList.isNotEmpty)
-                                    FutureBuilder<int>(
-                                      future: _calculateRevenue(price, participantsList.length),
-                                      builder: (context, snapshot) {
-                                        final revenue = snapshot.hasData ? snapshot.data! : 0;
-                                        return Text(
-                                          "Revenue: RM $revenue",
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.green,
-                                          ),
-                                        );
-                                      },
-                                    ),
+
+                                  const SizedBox(height: 6),
+
+                                  // Attendance breakdown
+                                  Row(
+                                    children: [
+                                      _attendanceChip("Attended", attendedCount, Colors.green),
+                                      const SizedBox(width: 8),
+                                      _attendanceChip("Absent", absentCount, Colors.red),
+                                      const SizedBox(width: 8),
+                                      _attendanceChip("Pending", pendingCount, Colors.orange),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        "Rate: $attendanceRate%",
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: attendanceRate >= 75
+                                              ? Colors.green
+                                              : attendanceRate >= 50
+                                                  ? Colors.orange
+                                                  : Colors.red,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 6),
+
+                                  // Attendance rate
+                                  
                                 ],
                               ),
                             ),
@@ -289,6 +348,7 @@ class EventReport extends StatelessWidget {
 
                                       final userData = userSnap.data!.data() as Map<String, dynamic>? ?? {};
                                       final userEmail = userData["email"] ?? userData["Email"] ?? "N/A";
+                                      final userAttendance = (participant is Map) ? (participant["attendance"] ?? "pending") : "pending";
                                       
                                       String displayName = userName ?? userData["name"]?.toString() ?? "Unknown User";
                                       
@@ -313,7 +373,16 @@ class EventReport extends StatelessWidget {
                                         subtitle: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text(userEmail),
+                                            Text(userAttendance.toString().toUpperCase(),
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: userAttendance == "attended"
+                                                    ? Colors.green
+                                                    : userAttendance == "absent"
+                                                        ? Colors.red
+                                                        : Colors.orange,
+                                              ),),
                                             if (formattedDate != "N/A")
                                               Text(
                                                 "Registered: $formattedDate",
@@ -373,6 +442,24 @@ class EventReport extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _attendanceChip(String label, int count, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        "$label: $count",
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
       ),
     );
   }
@@ -945,7 +1032,8 @@ class UserDetailsPage extends StatelessWidget {
             final eventPrice = eventData["eventPrice"]?.toString() ?? "Free";
             final status = eventData["status"]?.toString() ?? "registered";
             final paymentStatus = eventData["paymentStatus"]?.toString() ?? "paid";
-            
+            final attendance = eventData["attendance"]?.toString() ?? "pending";
+
             final registrationDate = eventData["registrationDate"];
             String formattedDate = "N/A";
             if (registrationDate is Timestamp) {
@@ -980,20 +1068,10 @@ class UserDetailsPage extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: status == "registered" ? Colors.green[100] : Colors.orange[100],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            status.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: status == "registered" ? Colors.green[800] : Colors.orange[800],
-                            ),
-                          ),
+                          child:                          
+                            _attendanceBadge(attendance), 
                         ),
                       ],
                     ),
@@ -1028,10 +1106,11 @@ class UserDetailsPage extends StatelessWidget {
                             ),
                           ],
                         ),
+                        
                         Container(
                           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: paymentStatus == "paid" ? Colors.green[100] : Colors.orange[100],
+                            color: paymentStatus == "paid" ? Colors.green[100] : Colors.blue[100],
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -1039,7 +1118,7 @@ class UserDetailsPage extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: paymentStatus == "paid" ? Colors.green[800] : Colors.orange[800],
+                              color: paymentStatus == "paid" ? Colors.green[800] : Colors.blue[800],
                             ),
                           ),
                         ),
@@ -1052,6 +1131,56 @@ class UserDetailsPage extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  Widget _attendanceBadge(String attendance) {
+    Color bg;
+    Color fg;
+    IconData icon;
+    String label;
+
+    switch (attendance) {
+      case "attended":
+        bg = Colors.green[100]!;
+        fg = Colors.green[800]!;
+        icon = Icons.check_circle;
+        label = "ATTENDED";
+        break;
+      case "absent":
+        bg = Colors.red[100]!;
+        fg = Colors.red[800]!;
+        icon = Icons.cancel;
+        label = "ABSENT";
+        break;
+      default:
+        bg = Colors.orange[100]!;
+        fg = Colors.orange[800]!;
+        icon = Icons.hourglass_bottom;
+        label = "PENDING";
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: fg),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -178,74 +178,6 @@ class AdminEventDetailPage extends StatelessWidget {
   }
 }
 
-class RegisteredUsersPage extends StatelessWidget {
-  final String eventId;
-
-  const RegisteredUsersPage({super.key, required this.eventId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Registered Users")),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('Event')
-            .doc(eventId)
-            .collection('registrations')
-            .orderBy('registeredAt', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No registered users yet."));
-          }
-
-          final docs = snapshot.data!.docs;
-          if (docs.isEmpty) {
-                      return Center(child: Text("No registered users yet."));
-                    }
-          return ListView.builder(
-            itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final data = docs[index].data() as Map<String, dynamic>;
-
-              final name = data['name'] ?? "Unknown";
-              final email = data['email'] ?? "N/A";
-              final Timestamp? ts = data['registeredAt'];
-
-              final date = ts != null
-                  ? DateFormat('dd/MM/yyyy HH:mm').format(ts.toDate())
-                  : "N/A";
-
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.person)),
-                  title: Text(name),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(email),
-                      Text(
-                        "Registered: $date",
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-
 class AdminActionButton extends StatelessWidget {
   final IconData icon;
   final String text;
@@ -287,5 +219,169 @@ class AdminActionButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class RegisteredUsersPage extends StatelessWidget {
+  final String eventId;
+
+  const RegisteredUsersPage({super.key, required this.eventId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Registered Users")),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('Event')
+            .doc(eventId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: Text("Event not found"));
+          }
+
+          final eventData = snapshot.data!.data() as Map<String, dynamic>;
+          final List registeredUsers = eventData["RegisteredUsers"] ?? [];
+
+          if (registeredUsers.isEmpty) {
+            return const Center(child: Text("No registered users yet."));
+          }
+
+          return ListView.builder(
+            itemCount: registeredUsers.length,
+            itemBuilder: (context, index) {
+              final user = registeredUsers[index];
+
+              final String name = user["userName"] ?? "Unknown";
+              final String userId = user["userId"] ?? "";
+              final Timestamp? ts = user["registrationDate"];
+
+              final String date = ts != null
+                  ? DateFormat('dd/MM/yyyy').format(ts.toDate())
+                  : "N/A";
+              final String attendance = user["attendance"] ?? "pending";
+
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: attendance == "attended"
+                        ? Colors.green[100]
+                        : attendance == "absent"
+                            ? Colors.red[100]
+                            : Colors.grey[200],
+                    child: Icon(
+                      Icons.person,
+                      color: attendance == "attended"
+                          ? Colors.green
+                          : attendance == "absent"
+                              ? Colors.red
+                              : Colors.grey,
+                    ),
+                  ),
+                  title: Text(name),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Registered: $date",
+                        style: TextStyle(
+                          fontSize: 12)),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Attendance: ${attendance.toUpperCase()}",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: attendance == "attended"
+                              ? Colors.green
+                              : attendance == "absent"
+                                  ? Colors.red
+                                  : Colors.orange,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // ✅ Attendance buttons
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // ❌ Absent
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.red),
+                        style: IconButton.styleFrom(backgroundColor: Colors.red[100]),
+                        tooltip: "Mark Absent",
+                        onPressed: attendance == "pending" ? () async {
+                          await updateAttendance(
+                            eventId: eventId,
+                            userId: userId,
+                            status: "absent",
+                          );
+                        } : null,
+                      ),
+
+                      // ✔ Attended
+                      IconButton(
+                        icon: const Icon(Icons.check, color: Colors.green),
+                        style: IconButton.styleFrom(backgroundColor: Colors.green[100]),
+                        tooltip: "Mark Attended",
+                        onPressed: attendance == "pending" ? () async {
+                          await updateAttendance(
+                            eventId: eventId,
+                            userId: userId,
+                            status: "attended",
+                          );
+                        } : null,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> updateAttendance({
+    required String eventId,
+    required String userId,
+    required String status, // attended | absent
+  }) async {
+    final eventRef =
+        FirebaseFirestore.instance.collection("Event").doc(eventId);
+
+    final snapshot = await eventRef.get();
+    if (!snapshot.exists) return;
+
+    final data = snapshot.data() as Map<String, dynamic>;
+    final List users = List.from(data["RegisteredUsers"] ?? []);
+
+    for (int i = 0; i < users.length; i++) {
+      if (users[i]["userId"] == userId) {
+        users[i]["attendance"] = status;
+        users[i]["attendanceUpdatedAt"] = FieldValue.serverTimestamp();
+        break;
+      }
+    }
+
+    await eventRef.update({
+      "RegisteredUsers": users,
+    });
+
+    await FirebaseFirestore.instance
+    .collection("users")
+    .doc(userId)
+    .collection("RegisteredEvents")
+    .doc(eventId)
+    .update({
+  "attendance": status, // attended | absent
+});
   }
 }
