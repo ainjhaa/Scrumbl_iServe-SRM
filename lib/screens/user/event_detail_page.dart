@@ -4,7 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:demo_app/services/shared_pref.dart';
+//import 'package:demo_app/services/shared_pref.dart';
 import 'package:demo_app/services/program_receipt_service.dart';
 
 class EDetailPage extends StatefulWidget {
@@ -113,7 +113,7 @@ class _EDetailPageState extends State<EDetailPage> {
           String detail = data["Detail"];
           int price =
               int.parse(data["Price"].toString().replaceAll("RM", ""));
-          bool isFreeEvent = price == 0;  
+          //bool isFreeEvent = price == 0;  
         
           return SingleChildScrollView(
             child: Column(
@@ -346,7 +346,7 @@ class _EDetailPageState extends State<EDetailPage> {
           "userId": userId,
           "userName": userName,
           "registrationDate": DateTime.now(),
-          "paymentType": "free",
+          //"paymentType": "free",
         }
       ])
     });
