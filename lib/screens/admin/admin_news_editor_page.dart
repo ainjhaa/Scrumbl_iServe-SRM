@@ -65,7 +65,7 @@ class _AdminNewsPageState extends State<AdminNewsPage> {
       // 🔔 SEND NOTIFICATION TO ALL USERS
       await NotificationService.sendNewsNotification(
         newsTitle: titleCtrl.text,
-        tag: selectedTag ?? "News",
+        tag: selectedTag,
       );
 
       titleCtrl.clear();
