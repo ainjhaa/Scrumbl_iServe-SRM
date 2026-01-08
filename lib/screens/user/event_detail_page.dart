@@ -9,8 +9,10 @@ import 'package:demo_app/services/program_receipt_service.dart';
 
 class EDetailPage extends StatefulWidget {
   final String eventId;
-
-  const EDetailPage({super.key, required this.eventId});
+  final String eventName;
+  final String eventLocation;
+  final String eventDate;
+  const EDetailPage({super.key, required this.eventId, required this.eventName,required this.eventLocation,required this.eventDate});
 
   @override
   State<EDetailPage> createState() => _EDetailPageState();
@@ -323,10 +325,30 @@ class _EDetailPageState extends State<EDetailPage> {
 
     // 🔹 Register user
     await userEventRef.set({
+      "eventDate": widget.eventDate,
       "eventId": widget.eventId,
+      "eventLocation": widget.eventLocation,
+      "eventName": widget.eventName,
+      "paymentStatus" : "free",
       "registrationDate": FieldValue.serverTimestamp(),
       "status": "registered",
-      "payment": "free",
+    });
+
+    // 🔹 ADD USER TO EVENT.RegisteredUsers (🔥 THIS IS THE FIX)
+    final eventRef = FirebaseFirestore.instance
+    .collection("Event")
+    .doc(widget.eventId);
+
+    // 🔹 ADD USER TO EVENT.RegisteredUsers (🔥 THIS IS THE FIX)
+    await eventRef.update({
+      "RegisteredUsers": FieldValue.arrayUnion([
+        {
+          "userId": userId,
+          "userName": userName,
+          "registrationDate": DateTime.now(),
+          "paymentType": "free",
+        }
+      ])
     });
 
     // 🔹 Optional: record as payment = FREE
