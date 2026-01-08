@@ -1,15 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:demo_app/screens/admin/act_manage_page.dart';
-//import 'package:demo_app/screens/upload_event.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:demo_app/widgets/ai_chat_popup.dart';
 import 'package:demo_app/widgets/info_section.dart';
 import 'package:demo_app/screens/notification_page.dart';
 import 'package:demo_app/screens/profile_page.dart';
-/*import 'membership_page.dart';
-import '../widgets/membership_card.dart';*/
-//import 'package:demo_app/screens/placeholder_page.dart';
+
 import 'package:demo_app/screens/admin/user_management.dart';
 import 'package:demo_app/widgets/nav_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -102,6 +99,65 @@ class _AdminState extends State<AdminPage> {
     getUserName();
   }
 
+  Widget _buildNotificationIcon(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return const SizedBox();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection("notifications")
+          .where("userId", isEqualTo: user.uid)
+          .where("isRead", isEqualTo: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        int unreadCount = snapshot.data?.docs.length ?? 0;
+
+        return Stack(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NotificationPage()),
+                );
+              },
+            ),
+
+            // 🔴 RED DOT / COUNTER
+            if (unreadCount > 0)
+              Positioned(
+                right: 10,
+                top: 10,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Center(
+                    child: Text(
+                      unreadCount > 9 ? "9+" : unreadCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,13 +166,7 @@ class _AdminState extends State<AdminPage> {
         centerTitle: true,
         actions: [
           // 🔔 Notification icon
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const NotificationPage()));
-            },
-          ),
+          _buildNotificationIcon(context),
 
           // 👤 Profile icon
           IconButton(

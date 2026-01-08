@@ -92,6 +92,65 @@ class _HomePageState extends State<HomePage> {
       }
     }
   }
+  
+  Widget _buildNotificationIcon(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return const SizedBox();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection("notifications")
+          .where("userId", isEqualTo: user.uid)
+          .where("isRead", isEqualTo: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        int unreadCount = snapshot.data?.docs.length ?? 0;
+
+        return Stack(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NotificationPage()),
+                );
+              },
+            ),
+
+            // 🔴 RED DOT / COUNTER
+            if (unreadCount > 0)
+              Positioned(
+                right: 10,
+                top: 10,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Center(
+                    child: Text(
+                      unreadCount > 9 ? "9+" : unreadCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   void initState() {
@@ -107,13 +166,7 @@ class _HomePageState extends State<HomePage> {
         centerTitle: true,
         actions: [
           // 🔔 Notification icon
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const NotificationPage()));
-            },
-          ),
+          _buildNotificationIcon(context),
 
           // 👤 Profile icon
           IconButton(
