@@ -725,6 +725,28 @@ class _UsersList extends StatelessWidget {
                             );
                           },
                         ),
+                        SizedBox(width: 8),
+                        FutureBuilder<int>(
+                          future: _getUserBadgeCount(userId),
+                          builder: (context, snapshot) {
+                            final badgeCount = snapshot.data ?? 0;
+                            return Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: badgeCount > 0 ? Colors.green[50] : Colors.grey[200],
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                "$badgeCount badges",
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: badgeCount > 0 ? Colors.green[700] : Colors.grey[700],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ],
@@ -762,6 +784,37 @@ class _UsersList extends StatelessWidget {
       print("Error getting event count: $e");
       return 0;
     }
+  }
+
+  Future<int> _getUserBadgeCount(String userId) async {
+    final attendedSnap = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .collection("RegisteredEvents")
+        .where("attendance", isEqualTo: "attended")
+        .get();
+
+    // Use Set to avoid duplicate badge counting
+    final Set<String> earnedCategories = {};
+
+    for (final regDoc in attendedSnap.docs) {
+      final eventId = regDoc.id;
+
+      final eventSnap = await FirebaseFirestore.instance
+          .collection("Event")
+          .doc(eventId)
+          .get();
+
+      if (!eventSnap.exists) continue;
+
+      final category = eventSnap.data()?['Category'];
+
+      if (category != null && category is String) {
+        earnedCategories.add(category);
+      }
+    }
+
+    return earnedCategories.length;
   }
 }
 
@@ -862,10 +915,10 @@ class UserDetailsPage extends StatelessWidget {
                                   : Colors.blue[100],
                               labelStyle: TextStyle(
                                 color: userRole == "Admin" ? Colors.red[700] : Colors.blue[700],
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.bold, fontSize: 12,
                               ),
                             ),
-                            SizedBox(width: 12),
+                            SizedBox(width: 10),
                             FutureBuilder<int>(
                               future: _getUserEventCount(userId),
                               builder: (context, snapshot) {
@@ -877,7 +930,29 @@ class UserDetailsPage extends StatelessWidget {
                                       : Colors.grey[200],
                                   labelStyle: TextStyle(
                                     color: eventCount > 0 ? Colors.green[700] : Colors.grey[700],
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.bold, fontSize: 12,
+                                  ),
+                                );
+                              },
+                            ),
+                            SizedBox(width: 10),
+
+                            FutureBuilder<int>(
+                              future: _getUserBadgeCount(userId),
+                              builder: (context, snapshot) {
+                                final badgeCount = snapshot.data ?? 0;
+
+                                return Chip(
+                                  avatar: const Icon(Icons.emoji_events, size: 18, color: Colors.amber),
+                                  label: Text("$badgeCount Badges"),
+                                  backgroundColor: badgeCount > 0
+                                      ? Colors.amber[100]
+                                      : Colors.grey[200],
+                                  labelStyle: TextStyle(
+                                    color: badgeCount > 0
+                                        ? Colors.amber[800]
+                                        : Colors.grey[600],
+                                    fontWeight: FontWeight.bold, fontSize: 12,
                                   ),
                                 );
                               },
@@ -1129,6 +1204,38 @@ class UserDetailsPage extends StatelessWidget {
       },
     );
   }
+
+Future<int> _getUserBadgeCount(String userId) async {
+  final attendedSnap = await FirebaseFirestore.instance
+      .collection("users")
+      .doc(userId)
+      .collection("RegisteredEvents")
+      .where("attendance", isEqualTo: "attended")
+      .get();
+
+  // Use Set to avoid duplicate badge counting
+  final Set<String> earnedCategories = {};
+
+  for (final regDoc in attendedSnap.docs) {
+    final eventId = regDoc.id;
+
+    final eventSnap = await FirebaseFirestore.instance
+        .collection("Event")
+        .doc(eventId)
+        .get();
+
+    if (!eventSnap.exists) continue;
+
+    final category = eventSnap.data()?['Category'];
+
+    if (category != null && category is String) {
+      earnedCategories.add(category);
+    }
+  }
+
+  return earnedCategories.length;
+}
+
 
   Widget _attendanceBadge(String attendance) {
     Color bg;
